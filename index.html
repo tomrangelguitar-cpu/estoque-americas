@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CONTROLE DE ESTOQUE | v7.5</title>
+    <title>CONTROLE DE ESTOQUE | v7.6</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -32,7 +32,11 @@
 
         main { margin-left: 240px; margin-top: 65px; padding: 20px; }
         .card { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        input, select { width: 100%; padding: 12px; border: 1px solid var(--cinza-borda); border-radius: 8px; margin-bottom: 10px; font-size: 16px; background: #fff; }
+        input, select { width: 100%; padding: 12px; border: 1px solid var(--cinza-borda); border-radius: 8px; margin-bottom: 10px; font-size: 16px; background: white; color: black; }
+        
+        /* Estilo para quando o seletor está desabilitado */
+        select:disabled { background-color: #f0f0f0; cursor: not-allowed; color: #888; }
+        
         .btn-principal { background: var(--roxo); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; font-size: 16px; }
         
         .scanner-view { width: 100%; height: 250px; background: #000; display: none; border-radius: 12px; margin-bottom: 15px; border: 3px solid var(--roxo); position: relative; overflow: hidden; }
@@ -95,7 +99,7 @@
 
         <main>
             <div id="v-dash" class="view">
-                <h3>Vencimentos Críticos (Até 10 dias)</h3>
+                <h3>Vencimentos Críticos</h3>
                 <div id="alertas-vencimento"></div>
                 <div class="card" style="text-align:center">
                     <h1 id="count-itens" style="margin:0; color:var(--roxo)">0</h1>
@@ -182,34 +186,18 @@
                 });
             },
 
-            cadastrar() {
-                const n = document.getElementById('cad-nome').value.trim();
-                const p = document.getElementById('cad-pass').value;
-                if(!n || p.length < 4) return alert("Preencha o nome e senha.");
-                
-                const partes = n.split(' ');
-                if(partes.length < 2) return alert("Por favor, digite Nome e Sobrenome.");
-                
-                const login = (partes[0][0] + partes[partes.length - 1]).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                db.ref('usuarios').push({ nome: n, login: login, pass: p, role: 'user' });
-                alert("Cadastro Realizado!\nSeu login é: " + login);
-                this.toggleAuth();
-            },
-
             login() {
                 const u = document.getElementById('login-user').value.toLowerCase().trim();
-                const p = document.getElementById('login-pass').value;
+                const p = document.getElementById('login-pass').value.trim();
                 
+                // LOGIN MASTER FORÇADO
                 if(u === 'iepeges' && p === 'itc@123@') {
-                    this.user = {nome: 'MASTER', login: 'iepeges', role: 'admin'};
+                    this.user = { nome: 'MASTER', login: 'iepeges', role: 'admin' };
                     this.entrarSistema();
                     return;
                 }
 
-                if(!this.carregado) {
-                    alert("Aguarde o carregamento do banco de dados...");
-                    return;
-                }
+                if(!this.carregado) { alert("Aguarde..."); return; }
 
                 const listaUsers = this.dados.usuarios ? Object.values(this.dados.usuarios) : [];
                 const found = listaUsers.find(x => x.login === u && x.pass === p);
@@ -218,7 +206,7 @@
                     this.user = found;
                     this.entrarSistema();
                 } else {
-                    alert("Acesso Inválido.");
+                    alert("Acesso Negado.");
                 }
             },
 
@@ -228,45 +216,73 @@
                 document.getElementById('user-info').innerText = this.user.nome;
                 if(this.user.role === 'admin') document.getElementById('nav-adm').classList.remove('hidden');
                 this.viewAtiva = 'dash';
+                this.renderAdmin(); // Força a renderização correta das permissões
             },
 
-            globalEnter(e) {
-                if(e.key !== "Enter") return;
-                if(document.getElementById('layout-sistema').style.display === 'block') {
-                    if(this.viewAtiva === 'ent') this.dbSalvar();
-                    if(this.viewAtiva === 'sai') this.dbRemover();
-                } else {
-                    this.login();
-                }
+            renderAdmin() {
+                const container = document.getElementById('lista-users');
+                if(!container) return;
+
+                // Lógica de Trava: Apenas se o login logado for EXATAMENTE 'iepeges'
+                const isMaster = (this.user && this.user.login === 'iepeges');
+                const usuarios = this.dados.usuarios ? Object.entries(this.dados.usuarios) : [];
+                
+                container.innerHTML = usuarios.map(([key, u]) => `
+                    <div style="padding:15px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; background: white">
+                        <div><b>${u.nome}</b><br><small>Login: ${u.login}</small></div>
+                        <div style="display:flex; gap:10px">
+                            <select onchange="app.setRole('${key}', this.value)" ${isMaster ? '' : 'disabled'}>
+                                <option value="user" ${u.role === 'user' ? 'selected' : ''}>Padrão</option>
+                                <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
+                            </select>
+                            <button onclick="app.altSenha('${key}')">🔑</button>
+                            <button onclick="app.delUser('${key}')" style="color:red">🗑️</button>
+                        </div>
+                    </div>
+                `).join('');
+            },
+
+            setRole(key, novoCargo) {
+                db.ref('usuarios/' + key).update({ role: novoCargo }).then(() => {
+                    alert("Permissão Alterada!");
+                });
+            },
+
+            cadastrar() {
+                const n = document.getElementById('cad-nome').value.trim();
+                const p = document.getElementById('cad-pass').value;
+                if(!n || p.length < 4) return alert("Dados insuficientes.");
+                const partes = n.split(' ');
+                if(partes.length < 2) return alert("Nome e Sobrenome obrigatórios.");
+                const login = (partes[0][0] + partes[partes.length - 1]).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                db.ref('usuarios').push({ nome: n, login: login, pass: p, role: 'user' });
+                alert("Login gerado: " + login);
+                this.toggleAuth();
             },
 
             dbSalvar() {
                 const cod = document.getElementById('ent-cod').value;
                 const nome = document.getElementById('ent-nome').value;
                 const venc = document.getElementById('ent-venc').value;
-                if(!cod || !nome) return alert("Preencha os campos obrigatórios.");
+                if(!cod || !nome) return alert("Erro nos campos.");
                 db.ref('materiais/' + cod).set({ cod, nome, venc });
                 this.log('ENTRADA', `${nome} (${cod})`);
                 ['ent-cod','ent-nome','ent-venc'].forEach(id => document.getElementById(id).value = "");
-                alert("Salvo com sucesso!");
+                alert("Salvo!");
             },
 
             dbRemover() {
                 const cod = document.getElementById('sai-cod').value;
                 const item = (this.dados.materiais && this.dados.materiais[cod]) ? this.dados.materiais[cod] : null;
-                if(!item) return alert("Material não localizado.");
-                
-                if(confirm(`ATENÇÃO: Você está prestes a excluir o item permanentemente.\n\nEsta ação é IRREVERSÍVEL. Deseja continuar?`)) {
+                if(!item) return alert("Não encontrado.");
+                if(confirm("Deseja EXCLUIR permanentemente?")) {
                     db.ref('materiais/' + cod).remove();
                     this.log('SAÍDA', `${item.nome} (${cod})`);
                     document.getElementById('sai-cod').value = "";
                 }
             },
 
-            log(acao, desc) {
-                db.ref('logs').push({ data: new Date().toLocaleString(), user: this.user.nome, acao, desc });
-            },
-
+            log(acao, desc) { db.ref('logs').push({ data: new Date().toLocaleString(), user: this.user.nome, acao, desc }); },
             checkVencimento() {
                 const container = document.getElementById('alertas-vencimento');
                 container.innerHTML = "";
@@ -275,8 +291,7 @@
                     if(!m.venc) return;
                     const diff = Math.ceil((new Date(m.venc) - new Date()) / (1000*60*60*24));
                     if(diff <= 10) {
-                        const dataBr = m.venc.split('-').reverse().join('/');
-                        container.innerHTML += `<div class="alert-item"><b>${m.nome}</b><br><small>Código: ${m.cod} | Vence em: ${dataBr} (${diff} dias)</small></div>`;
+                        container.innerHTML += `<div class="alert-item"><b>${m.nome}</b> (${m.cod}) - Vence em: ${m.venc.split('-').reverse().join('/')}</div>`;
                     }
                 });
                 document.getElementById('count-itens').innerText = materiais.length;
@@ -289,8 +304,7 @@
                 const materiais = this.dados.materiais ? Object.values(this.dados.materiais) : [];
                 materiais.forEach(m => {
                     if(m.nome.toLowerCase().includes(t) || m.cod.includes(t)) {
-                        const v = m.venc ? m.venc.split('-').reverse().join('/') : '-';
-                        corpo.innerHTML += `<tr style="border-bottom:1px solid #eee"><td>${m.cod}</td><td>${m.nome}</td><td>${v}</td></tr>`;
+                        corpo.innerHTML += `<tr><td>${m.cod}</td><td>${m.nome}</td><td>${m.venc || '-'}</td></tr>`;
                     }
                 });
             },
@@ -300,50 +314,16 @@
                 const container = document.getElementById('lista-logs');
                 container.innerHTML = logs.map(([key, l]) => `
                     <div class="log-row">
-                        <span><b>[${l.data}]</b> ${l.user}: ${l.acao} - ${l.desc}</span>
-                        ${(this.user && this.user.role === 'admin') ? `<button onclick="app.delLog('${key}')" style="color:red; cursor:pointer; background:none; border:none">🗑️</button>` : ''}
+                        <span><b>[${l.data}]</b> ${l.user}: ${l.acao}</span>
+                        ${(this.user && this.user.role === 'admin') ? `<button onclick="app.delLog('${key}')">🗑️</button>` : ''}
                     </div>
                 `).join('');
             },
 
-            delLog(key) { if(confirm("Remover este log?")) db.ref('logs/'+key).remove(); },
-
-            renderAdmin() {
-                const container = document.getElementById('lista-users');
-                if(!container) return;
-                
-                // Força o sistema a saber se o usuário logado é o MASTER iepeges
-                const isMaster = (this.user && this.user.login === 'iepeges');
-                const usuarios = this.dados.usuarios ? Object.entries(this.dados.usuarios) : [];
-                
-                container.innerHTML = usuarios.map(([key, u]) => `
-                    <div style="padding:15px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center">
-                        <div><b>${u.nome}</b><br><small>Login: ${u.login}</small></div>
-                        <div style="display:flex; gap:10px">
-                            <select onchange="app.setRole('${key}', this.value)" ${!isMaster ? 'disabled' : ''} style="width:120px; margin:0; padding:5px; border: 1px solid #ccc; border-radius:4px">
-                                <option value="user" ${u.role === 'user' ? 'selected' : ''}>Padrão</option>
-                                <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
-                            </select>
-                            <button onclick="app.altSenha('${key}')" title="Trocar Senha">🔑</button>
-                            <button onclick="app.delUser('${key}')" style="color:red" title="Excluir">🗑️</button>
-                        </div>
-                    </div>
-                `).join('');
-            },
-
-            setRole(key, novoCargo) {
-                db.ref('usuarios/' + key).update({ role: novoCargo }).then(() => {
-                    alert("Cargo atualizado com sucesso!");
-                    this.renderAdmin();
-                }).catch(err => {
-                    alert("Erro ao atualizar cargo: " + err.message);
-                });
-            },
-
+            delLog(key) { if(confirm("Remover log?")) db.ref('logs/'+key).remove(); },
             altSenha(key) { const n = prompt("Nova senha:"); if(n) db.ref('usuarios/'+key).update({ pass: n }); },
-            delUser(key) { if(confirm("Excluir colaborador?")) db.ref('usuarios/'+key).remove(); },
+            delUser(key) { if(confirm("Excluir usuário?")) db.ref('usuarios/'+key).remove(); },
             toggleAuth() { document.getElementById('card-login').classList.toggle('hidden'); document.getElementById('card-cad').classList.toggle('hidden'); },
-
             nav(v) {
                 this.viewAtiva = v;
                 document.querySelectorAll('.view').forEach(x => x.classList.add('hidden'));
@@ -351,7 +331,6 @@
                 document.getElementById('v-'+v).classList.remove('hidden');
                 document.getElementById('nav-'+v).classList.add('active');
                 try { Quagga.stop(); } catch(e){}
-                document.querySelectorAll('.scanner-view').forEach(s => s.style.display = 'none');
             },
 
             scan(inputId, divId) {
@@ -364,6 +343,14 @@
                     document.getElementById(inputId).value = r.codeResult.code;
                     Quagga.stop(); div.style.display = 'none';
                 });
+            },
+
+            globalEnter(e) {
+                if(e.key !== "Enter") return;
+                if(document.getElementById('layout-sistema').style.display === 'block') {
+                    if(this.viewAtiva === 'ent') this.dbSalvar();
+                    if(this.viewAtiva === 'sai') this.dbRemover();
+                } else { this.login(); }
             }
         };
 
