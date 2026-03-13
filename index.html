@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CONTROLE DE ESTOQUE | v7.9</title>
+    <title>CONTROLE DE ESTOQUE | v7.7</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
     
     <style>
         :root {
@@ -17,6 +17,10 @@
         }
         * { box-sizing: border-box; }
         body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--cinza-fundo); color: var(--texto); overflow-x: hidden; }
+
+        .auth-container { max-width: 400px; margin: 40px auto; padding: 20px; text-align: center; }
+        .logo-login { width: 100%; max-width: 300px; margin-bottom: 20px; }
+        .card-auth { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-top: 5px solid var(--roxo); text-align: left; }
 
         #layout-sistema { display: none; min-height: 100vh; }
         header { background: var(--escuro); color: white; height: 65px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; position: fixed; top: 0; width: 100%; z-index: 1000; }
@@ -28,46 +32,43 @@
 
         main { margin-left: 240px; margin-top: 65px; padding: 20px; }
         .card { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        input, select { width: 100%; padding: 10px; border: 1px solid var(--cinza-borda); border-radius: 8px; margin-bottom: 10px; font-size: 15px; }
+        input, select { width: 100%; padding: 12px; border: 1px solid var(--cinza-borda); border-radius: 8px; margin-bottom: 10px; font-size: 16px; background: white; color: black; }
         
-        .btn-principal { background: var(--roxo); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; }
-        .btn-excel { background: #1d6f42; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-bottom: 15px; }
-
+        .btn-principal { background: var(--roxo); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; font-size: 16px; }
+        
         .badge-mov { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; color: white; }
         .bg-entrada { background: var(--verde); }
         .bg-saida { background: var(--vermelho); }
 
-        .alert-item { background: #fee2e2; border-left: 4px solid var(--vermelho); padding: 15px; margin-bottom: 10px; color: #b91c1c; border-radius: 8px; font-size: 14px; }
-        .log-row { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .scanner-view { width: 100%; height: 250px; background: #000; display: none; border-radius: 12px; margin-bottom: 15px; border: 3px solid var(--roxo); position: relative; overflow: hidden; }
+        .alert-item { background: #fee2e2; border-left: 4px solid var(--vermelho); padding: 12px; margin-bottom: 8px; color: #b91c1c; border-radius: 4px; font-size: 14px; }
+        .log-row { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
         .hidden { display: none !important; }
-        
-        .filtros-mov { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; margin-bottom: 15px; }
 
         @media (max-width: 768px) {
             .sidebar { width: 60px; padding: 10px; }
             .nav-btn span { display: none; }
             main { margin-left: 60px; }
-            .filtros-mov { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body onkeydown="app.globalEnter(event)">
 
-    <div id="section-auth" class="auth-container" style="max-width:400px; margin: 80px auto; text-align:center;">
-        <img src="https://www.institutoamericas.org/wp-content/uploads/2025/09/logo-instituto-americas.svg" style="width:250px; margin-bottom:20px">
-        <div id="card-login" class="card">
-            <h3 style="color:var(--roxo)">Entrar</h3>
+    <div id="section-auth" class="auth-container">
+        <img src="https://www.institutoamericas.org/wp-content/uploads/2025/09/logo-instituto-americas.svg" class="logo-login">
+        <div id="card-login" class="card-auth">
+            <h3>Entrar</h3>
             <input type="text" id="login-user" placeholder="Usuário">
             <input type="password" id="login-pass" placeholder="Senha">
             <button class="btn-principal" onclick="app.login()">ACESSAR</button>
-            <p><a href="#" onclick="app.toggleAuth()" style="color:var(--roxo); text-decoration:none; font-size:14px">Novo Cadastro</a></p>
+            <p style="text-align:center; margin-top:15px;"><a href="#" onclick="app.toggleAuth()" style="color:var(--roxo); font-weight:bold; text-decoration:none">Novo Cadastro</a></p>
         </div>
-        <div id="card-cad" class="card hidden">
-            <h3 style="color:var(--roxo)">Novo Cadastro</h3>
+        <div id="card-cad" class="card-auth hidden">
+            <h3>Novo Cadastro</h3>
             <input type="text" id="cad-nome" placeholder="Nome Completo">
             <input type="password" id="cad-pass" placeholder="Senha" maxlength="8">
-            <button class="btn-principal" onclick="app.cadastrar()">CADASTRAR</button>
-            <p><a href="#" onclick="app.toggleAuth()" style="color:gray; text-decoration:none">Voltar</a></p>
+            <button class="btn-principal" onclick="app.cadastrar()">GERAR ACESSO</button>
+            <p style="text-align:center; margin-top:15px;"><a href="#" onclick="app.toggleAuth()" style="color:gray; text-decoration:none">Voltar</a></p>
         </div>
     </div>
 
@@ -89,57 +90,71 @@
             <button id="nav-mov" class="nav-btn" onclick="app.nav('mov')">🔄 <span>Movimentação</span></button>
             <button id="nav-ent" class="nav-btn" onclick="app.nav('ent')">📥 <span>Entrada</span></button>
             <button id="nav-sai" class="nav-btn" onclick="app.nav('sai')">📤 <span>Saída</span></button>
-            <button id="nav-rel" class="nav-btn" onclick="app.nav('rel')">📋 <span>Logs</span></button>
-            <button id="nav-adm" class="nav-btn hidden" onclick="app.nav('adm')">⚙️ <span>Cadastro de Usuários</span></button>
+            <button id="nav-rel" class="nav-btn" onclick="app.nav('rel')">📋 <span>Logs Sistema</span></button>
+            <button id="nav-adm" class="nav-btn hidden" onclick="app.nav('adm')">⚙️ <span>Admin</span></button>
         </aside>
 
         <main>
             <div id="v-dash" class="view">
-                <h3>Vencimentos Críticos</h3>
+                <h3>Vencimentos (Próximos 10 dias)</h3>
                 <div id="alertas-vencimento"></div>
                 <div class="card" style="text-align:center">
                     <h1 id="count-itens" style="margin:0; color:var(--roxo)">0</h1>
-                    <p style="margin:0; color:gray">Itens em Estoque</p>
+                    <p style="margin:0; color:gray">Itens em estoque</p>
                 </div>
             </div>
 
             <div id="v-mov" class="view hidden">
                 <div class="card">
-                    <h3>Histórico de Movimentação</h3>
-                    <div class="filtros-mov">
-                        <div><label><small>Início</small></label><input type="date" id="filtro-inicio" onchange="app.renderMov()"></div>
-                        <div><label><small>Fim</small></label><input type="date" id="filtro-fim" onchange="app.renderMov()"></div>
-                        <button class="btn-excel" onclick="app.exportarExcel()">📗 Exportar Excel</button>
-                    </div>
-                    <input type="text" id="busca-mov" placeholder="Buscar material..." onkeyup="app.renderMov()">
-                    <div id="lista-movimentacao" style="max-height:500px; overflow-y:auto"></div>
+                    <h3>Movimentação de Materiais</h3>
+                    <input type="text" id="busca-mov" placeholder="Buscar por material ou código..." onkeyup="app.renderMov()">
+                    <div id="lista-movimentacao" style="max-height:600px; overflow-y:auto"></div>
                 </div>
             </div>
 
             <div id="v-est" class="view hidden">
                 <div class="card">
-                    <h3>Estoque em Tempo Real</h3>
-                    <input type="text" id="busca" placeholder="Filtrar..." onkeyup="app.renderEstoque()">
-                    <table style="width:100%; border-collapse:collapse" border="1" bordercolor="#eee">
-                        <thead style="background:#f9f9f9"><tr><th>Cód</th><th>Material</th><th>Validade</th></tr></thead>
+                    <h3>Itens Disponíveis</h3>
+                    <input type="text" id="busca" placeholder="Filtrar estoque..." onkeyup="app.renderEstoque()">
+                    <table style="width:100%; border-collapse:collapse; margin-top:10px" border="1" bordercolor="#eee">
+                        <thead><tr style="background:#f9f9f9"><th>Cód</th><th>Material</th><th>Vencimento</th></tr></thead>
                         <tbody id="lista-est" style="text-align:center"></tbody>
                     </table>
                 </div>
             </div>
 
             <div id="v-ent" class="view hidden">
-                <div class="card"><h3>Entrada</h3><input type="text" id="ent-cod" placeholder="Código"><input type="text" id="ent-nome" placeholder="Nome"><input type="date" id="ent-venc"><button class="btn-principal" onclick="app.dbSalvar()">SALVAR</button></div>
+                <div class="card">
+                    <h3>Entrada de Material</h3>
+                    <button class="btn-principal" style="background:#444; margin-bottom:15px" onclick="app.scan('ent-cod', 's-ent')">📷 Escanear</button>
+                    <div id="s-ent" class="scanner-view"></div>
+                    <label>Código</label><input type="text" id="ent-cod">
+                    <label>Material</label><input type="text" id="ent-nome">
+                    <label>Validade</label><input type="date" id="ent-venc">
+                    <button class="btn-principal" onclick="app.dbSalvar()">SALVAR ENTRADA</button>
+                </div>
             </div>
+
             <div id="v-sai" class="view hidden">
-                <div class="card"><h3>Saída</h3><input type="text" id="sai-cod" placeholder="Código"><button class="btn-principal" style="background:var(--vermelho)" onclick="app.dbRemover()">DAR BAIXA</button></div>
+                <div class="card">
+                    <h3>Saída de Material</h3>
+                    <button class="btn-principal" style="background:#444; margin-bottom:15px" onclick="app.scan('sai-cod', 's-sai')">📷 Escanear</button>
+                    <div id="s-sai" class="scanner-view"></div>
+                    <label>Código</label><input type="text" id="sai-cod">
+                    <button class="btn-principal" style="background:var(--vermelho); margin-top:10px" onclick="app.dbRemover()">DAR BAIXA</button>
+                </div>
             </div>
+
             <div id="v-rel" class="view hidden">
-                <div class="card"><h3>Logs de Sistema</h3><div id="lista-logs"></div></div>
+                <div class="card">
+                    <h3>Logs de Sistema</h3>
+                    <div id="lista-logs" style="max-height:500px; overflow-y:auto"></div>
+                </div>
             </div>
 
             <div id="v-adm" class="view hidden">
                 <div class="card">
-                    <h3>Gestão de Usuários</h3>
+                    <h3>Equipe</h3>
                     <div id="lista-users"></div>
                 </div>
             </div>
@@ -156,16 +171,22 @@
             messagingSenderId: "722436445499",
             appId: "1:722436445499:web:e4c968164056477d44d31e"
         };
+
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
         const app = {
-            user: null, viewAtiva: 'login', dados: {}, 
+            user: null, viewAtiva: 'login', dados: { materiais: {}, logs: {}, usuarios: {} }, carregado: false,
 
             init() {
-                db.ref('/').on('value', snap => {
-                    this.dados = snap.val() || {};
-                    this.renderEstoque(); this.renderLogs(); this.renderMov(); this.renderAdmin(); this.checkVencimento();
+                db.ref('/').on('value', (snap) => {
+                    this.dados = snap.val() || { materiais: {}, logs: {}, usuarios: {} };
+                    this.carregado = true;
+                    this.renderEstoque();
+                    this.renderLogs();
+                    this.renderMov();
+                    this.renderAdmin();
+                    this.checkVencimento();
                 });
             },
 
@@ -176,9 +197,9 @@
                     this.user = { nome: 'MASTER', login: 'iepeges', role: 'admin' };
                     this.entrarSistema(); return;
                 }
-                const lista = this.dados.usuarios ? Object.values(this.dados.usuarios) : [];
-                const found = lista.find(x => x.login === u && x.pass === p);
-                if(found) { this.user = found; this.entrarSistema(); } else { alert("Acesso negado."); }
+                const listaUsers = this.dados.usuarios ? Object.values(this.dados.usuarios) : [];
+                const found = listaUsers.find(x => x.login === u && x.pass === p);
+                if(found) { this.user = found; this.entrarSistema(); } else { alert("Acesso Inválido."); }
             },
 
             entrarSistema() {
@@ -189,121 +210,138 @@
                 this.nav('dash');
             },
 
-            renderAdmin() {
-                const container = document.getElementById('lista-users');
-                if(!container) return;
-                const isMaster = (this.user && this.user.login === 'iepeges');
-                const users = this.dados.usuarios ? Object.entries(this.dados.usuarios) : [];
-                
-                container.innerHTML = users.map(([key, u]) => `
-                    <div class="log-row">
-                        <div><b>${u.nome}</b><br><small>Login: ${u.login}</small></div>
-                        <div style="display:flex; gap:8px">
-                            <select onchange="app.setRole('${key}', this.value)" ${isMaster ? '' : 'disabled'} style="width:90px; padding:4px; margin:0">
-                                <option value="user" ${u.role === 'user' ? 'selected' : ''}>Padrão</option>
-                                <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
-                            </select>
-                            ${isMaster ? `<button onclick="app.mudarSenha('${key}')" title="Alterar Senha">🔑</button>` : ''}
-                            <button onclick="app.delUser('${key}')" style="color:red">🗑️</button>
-                        </div>
-                    </div>
-                `).join('');
+            dbSalvar() {
+                const cod = document.getElementById('ent-cod').value;
+                const nome = document.getElementById('ent-nome').value;
+                const venc = document.getElementById('ent-venc').value;
+                if(!cod || !nome) return alert("Preencha os campos.");
+                db.ref('materiais/' + cod).set({ cod, nome, venc });
+                this.log('ENTRADA', `${nome} (${cod})`);
+                ['ent-cod','ent-nome','ent-venc'].forEach(id => document.getElementById(id).value = "");
+                alert("Entrada registrada!");
             },
 
-            mudarSenha(key) {
-                const nova = prompt("Digite a nova senha para este usuário:");
-                if(nova && nova.length >= 4) {
-                    db.ref('usuarios/' + key).update({ pass: nova });
-                    alert("Senha alterada com sucesso!");
+            dbRemover() {
+                const cod = document.getElementById('sai-cod').value;
+                const item = (this.dados.materiais && this.dados.materiais[cod]) ? this.dados.materiais[cod] : null;
+                if(!item) return alert("Item não encontrado.");
+                if(confirm(`Confirmar saída de: ${item.nome}?`)) {
+                    db.ref('materiais/' + cod).remove();
+                    this.log('SAÍDA', `${item.nome} (${cod})`);
+                    document.getElementById('sai-cod').value = "";
                 }
+            },
+
+            log(acao, desc) {
+                db.ref('logs').push({ data: new Date().toLocaleString(), user: this.user.nome, acao, desc });
             },
 
             renderMov() {
                 const container = document.getElementById('lista-movimentacao');
                 const busca = document.getElementById('busca-mov').value.toLowerCase();
-                const inicio = document.getElementById('filtro-inicio').value;
-                const fim = document.getElementById('filtro-fim').value;
+                const logs = this.dados.logs ? Object.values(this.dados.logs).reverse() : [];
+                const movs = logs.filter(l => (l.acao === 'ENTRADA' || l.acao === 'SAÍDA') && l.desc.toLowerCase().includes(busca));
                 
-                let movs = this.dados.logs ? Object.values(this.dados.logs).reverse() : [];
-                movs = movs.filter(l => (l.acao === 'ENTRADA' || l.acao === 'SAÍDA'));
-
-                if(busca) movs = movs.filter(l => l.desc.toLowerCase().includes(busca));
-                if(inicio) movs = movs.filter(l => new Date(l.data.split(',')[0].split('/').reverse().join('-')) >= new Date(inicio));
-                if(fim) movs = movs.filter(l => new Date(l.data.split(',')[0].split('/').reverse().join('-')) <= new Date(fim));
-
                 container.innerHTML = movs.map(l => `
                     <div class="log-row">
-                        <span><span class="badge-mov ${l.acao === 'ENTRADA' ? 'bg-entrada' : 'bg-saida'}">${l.acao}</span> <b>${l.desc}</b></span>
-                        <div style="text-align:right"><small>${l.data}</small><br><small>Por: ${l.user}</small></div>
-                    </div>`).join('');
+                        <span>
+                            <span class="badge-mov ${l.acao === 'ENTRADA' ? 'bg-entrada' : 'bg-saida'}">${l.acao}</span>
+                            <b style="margin-left:10px">${l.desc}</b>
+                        </span>
+                        <div style="text-align:right">
+                            <small>${l.data}</small><br>
+                            <small>Por: ${l.user}</small>
+                        </div>
+                    </div>
+                `).join('');
             },
 
-            exportarExcel() {
-                const container = document.getElementById('lista-movimentacao');
-                const rows = Array.from(container.querySelectorAll('.log-row'));
-                const data = rows.map(r => ({
-                    'Movimento': r.querySelector('.badge-mov').innerText,
-                    'Material': r.querySelector('b').innerText,
-                    'Data/Hora': r.querySelector('small').innerText,
-                    'Usuário': r.querySelectorAll('small')[1].innerText.replace('Por: ', '')
-                }));
-                const ws = XLSX.utils.json_to_sheet(data);
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Movimentação");
-                XLSX.writeFile(wb, "Relatorio_Movimentacao.xlsx");
+            renderEstoque() {
+                const t = document.getElementById('busca').value.toLowerCase();
+                const corpo = document.getElementById('lista-est');
+                corpo.innerHTML = "";
+                const materiais = this.dados.materiais ? Object.values(this.dados.materiais) : [];
+                materiais.forEach(m => {
+                    if(m.nome.toLowerCase().includes(t) || m.cod.includes(t)) {
+                        corpo.innerHTML += `<tr><td>${m.cod}</td><td>${m.nome}</td><td>${m.venc || '-'}</td></tr>`;
+                    }
+                });
+                document.getElementById('count-itens').innerText = materiais.length;
             },
 
-            // Funções de apoio
-            nav(v) { 
+            renderLogs() {
+                const logs = this.dados.logs ? Object.entries(this.dados.logs).reverse() : [];
+                const container = document.getElementById('lista-logs');
+                container.innerHTML = logs.map(([key, l]) => `
+                    <div class="log-row">
+                        <span><b>[${l.data}]</b> ${l.user}: ${l.acao}</span>
+                        ${(this.user && this.user.role === 'admin') ? `<button onclick="app.delLog('${key}')" style="background:none; border:none; color:red; cursor:pointer">🗑️</button>` : ''}
+                    </div>
+                `).join('');
+            },
+
+            renderAdmin() {
+                const container = document.getElementById('lista-users');
+                const isMaster = (this.user && this.user.login === 'iepeges');
+                const usuarios = this.dados.usuarios ? Object.entries(this.dados.usuarios) : [];
+                container.innerHTML = usuarios.map(([key, u]) => `
+                    <div class="log-row">
+                        <div><b>${u.nome}</b> (${u.login})</div>
+                        <div style="display:flex; gap:5px">
+                            <select onchange="app.setRole('${key}', this.value)" ${isMaster ? '' : 'disabled'} style="width:100px; padding:2px; margin:0; font-size:12px">
+                                <option value="user" ${u.role === 'user' ? 'selected' : ''}>Padrão</option>
+                                <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
+                            </select>
+                            <button onclick="app.delUser('${key}')" style="color:red; background:none; border:none; cursor:pointer">🗑️</button>
+                        </div>
+                    </div>
+                `).join('');
+            },
+
+            setRole(key, novo) { db.ref('usuarios/'+key).update({ role: novo }).then(() => alert("Atualizado!")); },
+            delUser(key) { if(confirm("Excluir usuário?")) db.ref('usuarios/'+key).remove(); },
+            delLog(key) { if(confirm("Excluir log?")) db.ref('logs/'+key).remove(); },
+            checkVencimento() {
+                const container = document.getElementById('alertas-vencimento');
+                container.innerHTML = "";
+                const materiais = this.dados.materiais ? Object.values(this.dados.materiais) : [];
+                materiais.forEach(m => {
+                    if(!m.venc) return;
+                    const diff = Math.ceil((new Date(m.venc) - new Date()) / (1000*60*60*24));
+                    if(diff <= 10) container.innerHTML += `<div class="alert-item">⚠️ ${m.nome} vence em ${diff} dias!</div>`;
+                });
+            },
+
+            nav(v) {
+                this.viewAtiva = v;
                 document.querySelectorAll('.view').forEach(x => x.classList.add('hidden'));
                 document.querySelectorAll('.nav-btn').forEach(x => x.classList.remove('active'));
                 document.getElementById('v-'+v).classList.remove('hidden');
                 document.getElementById('nav-'+v).classList.add('active');
+                try { Quagga.stop(); } catch(e){}
             },
-            log(acao, desc) { db.ref('logs').push({ data: new Date().toLocaleString('pt-BR'), user: this.user.nome, acao, desc }); },
-            dbSalvar() {
-                const c = document.getElementById('ent-cod').value, n = document.getElementById('ent-nome').value, v = document.getElementById('ent-venc').value;
-                if(!c || !n) return alert("Preencha!");
-                db.ref('materiais/'+c).set({ cod:c, nome:n, venc:v });
-                this.log('ENTRADA', n + ' ('+c+')');
-                alert("Salvo!");
+
+            scan(inputId, divId) {
+                const div = document.getElementById(divId); div.style.display = 'block';
+                Quagga.init({ inputStream: { name: "Live", type: "LiveStream", target: div, constraints: { facingMode: "environment" } }, decoder: { readers: ["ean_reader", "code_128_reader"] } }, (err) => { if(!err) Quagga.start(); });
+                Quagga.onDetected((r) => { document.getElementById(inputId).value = r.codeResult.code; Quagga.stop(); div.style.display = 'none'; });
             },
-            dbRemover() {
-                const c = document.getElementById('sai-cod').value;
-                const item = this.dados.materiais[c];
-                if(!item) return alert("Não achei");
-                if(confirm("Confirmar?")) { db.ref('materiais/'+c).remove(); this.log('SAÍDA', item.nome + ' ('+c+')'); }
-            },
-            checkVencimento() {
-                const container = document.getElementById('alertas-vencimento');
-                container.innerHTML = "";
-                const mats = this.dados.materiais ? Object.values(this.dados.materiais) : [];
-                mats.forEach(m => {
-                    if(!m.venc) return;
-                    const diff = Math.ceil((new Date(m.venc) - new Date()) / (1000*60*60*24));
-                    if(diff <= 10) container.innerHTML += `<div class="alert-item"><b>${m.nome.toUpperCase()}</b> (${m.cod}) - Vencimento: ${m.venc.split('-').reverse().join('/')}</div>`;
-                });
-            },
-            renderEstoque() {
-                const b = document.getElementById('busca').value.toLowerCase();
-                const mats = this.dados.materiais ? Object.values(this.dados.materiais) : [];
-                document.getElementById('lista-est').innerHTML = mats.filter(m => m.nome.toLowerCase().includes(b)).map(m => `<tr><td>${m.cod}</td><td>${m.nome}</td><td>${m.venc || '-'}</td></tr>`).join('');
-                document.getElementById('count-itens').innerText = mats.length;
-            },
-            renderLogs() {
-                const lgs = this.dados.logs ? Object.values(this.dados.logs).reverse() : [];
-                document.getElementById('lista-logs').innerHTML = lgs.slice(0, 30).map(l => `<div class="log-row"><span>${l.data} - ${l.user}: ${l.acao}</span></div>`).join('');
-            },
-            setRole(key, r) { db.ref('usuarios/'+key).update({ role: r }); },
-            delUser(k) { if(confirm("Excluir?")) db.ref('usuarios/'+k).remove(); },
-            toggleAuth() { document.getElementById('card-login').classList.toggle('hidden'); document.getElementById('card-cad').classList.toggle('hidden'); },
+
             cadastrar() {
-                const n = document.getElementById('cad-nome').value, p = document.getElementById('cad-pass').value;
-                const partes = n.split(' '), login = (partes[0][0] + (partes[partes.length-1] || "")).toLowerCase();
-                db.ref('usuarios').push({ nome: n, login, pass: p, role: 'user' });
-                alert("Login: " + login); this.toggleAuth();
-            }
+                const n = document.getElementById('cad-nome').value.trim();
+                const p = document.getElementById('cad-pass').value;
+                if(!n || p.length < 4) return alert("Preencha tudo.");
+                const partes = n.split(' ');
+                const login = (partes[0][0] + (partes[partes.length-1] || "")).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                db.ref('usuarios').push({ nome: n, login: login, pass: p, role: 'user' });
+                alert("Criado! Login: " + login);
+                this.toggleAuth();
+            },
+
+            toggleAuth() { document.getElementById('card-login').classList.toggle('hidden'); document.getElementById('card-cad').classList.toggle('hidden'); },
+            globalEnter(e) { if(e.key === "Enter") this.login(); }
         };
+
         app.init();
     </script>
 </body>
