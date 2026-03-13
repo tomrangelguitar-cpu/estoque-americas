@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CONTROLE DE ESTOQUE | v7.7</title>
+    <title>CONTROLE DE ESTOQUE | v.1 - By Milton Rangel</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <style>
         :root {
@@ -35,13 +36,14 @@
         input, select { width: 100%; padding: 12px; border: 1px solid var(--cinza-borda); border-radius: 8px; margin-bottom: 10px; font-size: 16px; background: white; color: black; }
         
         .btn-principal { background: var(--roxo); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; font-size: 16px; }
-        
+        .btn-excel { background: #1d6f42; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; margin-bottom: 15px; font-weight: bold; }
+
         .badge-mov { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; color: white; }
         .bg-entrada { background: var(--verde); }
         .bg-saida { background: var(--vermelho); }
 
         .scanner-view { width: 100%; height: 250px; background: #000; display: none; border-radius: 12px; margin-bottom: 15px; border: 3px solid var(--roxo); position: relative; overflow: hidden; }
-        .alert-item { background: #fee2e2; border-left: 4px solid var(--vermelho); padding: 12px; margin-bottom: 8px; color: #b91c1c; border-radius: 4px; font-size: 14px; }
+        .alert-item { background: #fee2e2; border-left: 4px solid var(--vermelho); padding: 12px; margin-bottom: 8px; color: #b91c1c; border-radius: 8px; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .log-row { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
         .hidden { display: none !important; }
 
@@ -90,8 +92,8 @@
             <button id="nav-mov" class="nav-btn" onclick="app.nav('mov')">🔄 <span>Movimentação</span></button>
             <button id="nav-ent" class="nav-btn" onclick="app.nav('ent')">📥 <span>Entrada</span></button>
             <button id="nav-sai" class="nav-btn" onclick="app.nav('sai')">📤 <span>Saída</span></button>
-            <button id="nav-rel" class="nav-btn" onclick="app.nav('rel')">📋 <span>Logs Sistema</span></button>
-            <button id="nav-adm" class="nav-btn hidden" onclick="app.nav('adm')">⚙️ <span>Admin</span></button>
+            <button id="nav-rel" class="nav-btn hidden" onclick="app.nav('rel')">📋 <span>Logs Sistema</span></button>
+            <button id="nav-adm" class="nav-btn hidden" onclick="app.nav('adm')">⚙️ <span>Cadastro Usuários</span></button>
         </aside>
 
         <main>
@@ -107,6 +109,7 @@
             <div id="v-mov" class="view hidden">
                 <div class="card">
                     <h3>Movimentação de Materiais</h3>
+                    <button class="btn-excel" onclick="app.exportarExcel()">📗 Exportar Excel</button>
                     <input type="text" id="busca-mov" placeholder="Buscar por material ou código..." onkeyup="app.renderMov()">
                     <div id="lista-movimentacao" style="max-height:600px; overflow-y:auto"></div>
                 </div>
@@ -154,7 +157,7 @@
 
             <div id="v-adm" class="view hidden">
                 <div class="card">
-                    <h3>Equipe</h3>
+                    <h3>Gestão de Colaboradores</h3>
                     <div id="lista-users"></div>
                 </div>
             </div>
@@ -206,8 +209,25 @@
                 document.getElementById('section-auth').classList.add('hidden');
                 document.getElementById('layout-sistema').style.display = 'block';
                 document.getElementById('user-info').innerText = this.user.nome;
-                if(this.user.role === 'admin') document.getElementById('nav-adm').classList.remove('hidden');
+                
+                if(this.user.role === 'admin') {
+                    document.getElementById('nav-adm').classList.remove('hidden');
+                    document.getElementById('nav-rel').classList.remove('hidden');
+                }
+                
                 this.nav('dash');
+            },
+
+            exportarExcel() {
+                const logs = this.dados.logs ? Object.values(this.dados.logs).reverse() : [];
+                const movs = logs.filter(l => l.acao === 'ENTRADA' || l.acao === 'SAÍDA');
+                const dataFormatada = movs.map(m => ({
+                    'Data': m.data, 'Usuário': m.user, 'Tipo': m.acao, 'Descrição': m.desc
+                }));
+                const ws = XLSX.utils.json_to_sheet(dataFormatada);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Movimentação");
+                XLSX.writeFile(wb, `Movimentacao_Estoque.xlsx`);
             },
 
             dbSalvar() {
@@ -233,7 +253,7 @@
             },
 
             log(acao, desc) {
-                db.ref('logs').push({ data: new Date().toLocaleString(), user: this.user.nome, acao, desc });
+                db.ref('logs').push({ data: new Date().toLocaleString('pt-BR'), user: this.user.nome, acao, desc });
             },
 
             renderMov() {
@@ -241,19 +261,7 @@
                 const busca = document.getElementById('busca-mov').value.toLowerCase();
                 const logs = this.dados.logs ? Object.values(this.dados.logs).reverse() : [];
                 const movs = logs.filter(l => (l.acao === 'ENTRADA' || l.acao === 'SAÍDA') && l.desc.toLowerCase().includes(busca));
-                
-                container.innerHTML = movs.map(l => `
-                    <div class="log-row">
-                        <span>
-                            <span class="badge-mov ${l.acao === 'ENTRADA' ? 'bg-entrada' : 'bg-saida'}">${l.acao}</span>
-                            <b style="margin-left:10px">${l.desc}</b>
-                        </span>
-                        <div style="text-align:right">
-                            <small>${l.data}</small><br>
-                            <small>Por: ${l.user}</small>
-                        </div>
-                    </div>
-                `).join('');
+                container.innerHTML = movs.map(l => `<div class="log-row"><span><span class="badge-mov ${l.acao === 'ENTRADA' ? 'bg-entrada' : 'bg-saida'}">${l.acao}</span><b style="margin-left:10px">${l.desc}</b></span><div style="text-align:right"><small>${l.data}</small><br><small>Por: ${l.user}</small></div></div>`).join('');
             },
 
             renderEstoque() {
@@ -272,12 +280,7 @@
             renderLogs() {
                 const logs = this.dados.logs ? Object.entries(this.dados.logs).reverse() : [];
                 const container = document.getElementById('lista-logs');
-                container.innerHTML = logs.map(([key, l]) => `
-                    <div class="log-row">
-                        <span><b>[${l.data}]</b> ${l.user}: ${l.acao}</span>
-                        ${(this.user && this.user.role === 'admin') ? `<button onclick="app.delLog('${key}')" style="background:none; border:none; color:red; cursor:pointer">🗑️</button>` : ''}
-                    </div>
-                `).join('');
+                container.innerHTML = logs.map(([key, l]) => `<div class="log-row"><span><b>[${l.data}]</b> ${l.user}: ${l.acao}</span></div>`).join('');
             },
 
             renderAdmin() {
@@ -300,7 +303,6 @@
 
             setRole(key, novo) { db.ref('usuarios/'+key).update({ role: novo }).then(() => alert("Atualizado!")); },
             delUser(key) { if(confirm("Excluir usuário?")) db.ref('usuarios/'+key).remove(); },
-            delLog(key) { if(confirm("Excluir log?")) db.ref('logs/'+key).remove(); },
             checkVencimento() {
                 const container = document.getElementById('alertas-vencimento');
                 container.innerHTML = "";
@@ -308,7 +310,10 @@
                 materiais.forEach(m => {
                     if(!m.venc) return;
                     const diff = Math.ceil((new Date(m.venc) - new Date()) / (1000*60*60*24));
-                    if(diff <= 10) container.innerHTML += `<div class="alert-item">⚠️ ${m.nome} vence em ${diff} dias!</div>`;
+                    if(diff <= 10) {
+                        const dataFormatada = m.venc.split('-').reverse().join('/');
+                        container.innerHTML += `<div class="alert-item"><b>${m.nome}</b> (${m.cod}) - Vencimento: <b>${dataFormatada}</b></div>`;
+                    }
                 });
             },
 
