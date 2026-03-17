@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CONTROLE DE ESTOQUE | v.1.7 - By Milton Rangel</title>
+    <title>CONTROLE DE ESTOQUE | v.1.1.0 - By Milton Rangel</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -38,8 +38,8 @@
         label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 14px; color: var(--escuro); }
         
         .btn-principal { background: var(--roxo); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; font-size: 16px; }
+        .btn-excel { background: #1d6f42; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; margin-bottom: 15px; font-weight: bold; }
 
-        /* Estrutura de Divisão da Tela Inicial */
         .grid-vencimentos { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
         .col-venc { flex: 1; min-width: 300px; }
         .titulo-setor { font-weight: bold; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 2px solid #ddd; display: flex; align-items: center; gap: 8px; }
@@ -52,8 +52,14 @@
         th { background: #f9f9f9; padding: 12px; font-size: 13px; color: var(--escuro); text-transform: uppercase; border: 1px solid #eee; }
         td { padding: 10px; border: 1px solid #eee; font-size: 14px; text-align: center; }
 
+        .log-row { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+        .badge-mov { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; color: white; }
+        .bg-entrada { background: var(--verde); }
+        .bg-saida { background: var(--vermelho); }
+
         .hidden { display: none !important; }
         .scanner-view { width: 100%; height: 250px; background: #000; display: none; border-radius: 12px; margin-bottom: 15px; border: 3px solid var(--roxo); overflow: hidden; }
+        .icon-btn { cursor: pointer; font-size: 18px; padding: 5px; }
 
         @media (max-width: 768px) { .sidebar { width: 60px; } .nav-btn span { display: none; } main { margin-left: 60px; } }
     </style>
@@ -118,6 +124,15 @@
                 </div>
             </div>
 
+            <div id="v-mov" class="view hidden">
+                <div class="card">
+                    <h3>Movimentação de Kits</h3>
+                    <button class="btn-excel" onclick="app.exportarExcel()">📗 Exportar Excel</button>
+                    <input type="text" id="busca-mov" placeholder="Buscar por kit, código ou protocolo..." onkeyup="app.renderMov()">
+                    <div id="lista-movimentacao" style="max-height:600px; overflow-y:auto"></div>
+                </div>
+            </div>
+
             <div id="v-est" class="view hidden">
                 <div class="card">
                     <h3>Kits Disponíveis em Estoque</h3>
@@ -152,9 +167,19 @@
                 </div>
             </div>
 
-            <div id="v-mov" class="view hidden"><div class="card"><h3>Movimentação</h3><div id="lista-movimentacao"></div></div></div>
-            <div id="v-rel" class="view hidden"><div class="card"><h3>Logs</h3><div id="lista-logs"></div></div></div>
-            <div id="v-adm" class="view hidden"><div class="card"><h3>Usuários</h3><div id="lista-users"></div></div></div>
+            <div id="v-rel" class="view hidden">
+                <div class="card">
+                    <h3>Logs de Sistema</h3>
+                    <div id="lista-logs" style="max-height:500px; overflow-y:auto"></div>
+                </div>
+            </div>
+
+            <div id="v-adm" class="view hidden">
+                <div class="card">
+                    <h3>Gestão de Colaboradores</h3>
+                    <div id="lista-users"></div>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -184,6 +209,7 @@
                     this.renderEstoque();
                     this.renderLogs();
                     this.renderMov();
+                    this.renderAdmin();
                     this.checkVencimento();
                 });
             },
@@ -215,7 +241,7 @@
                 const venc = document.getElementById('ent-venc').value;
                 if(!cod || !nome) return alert("Preencha Código e Nome.");
                 db.ref('materiais/' + cod).set({ cod, nome, prot, venc });
-                db.ref('logs').push({ data: new Date().toLocaleString('pt-BR'), user: this.user.nome, acao: 'ENTRADA', desc: `Kit: ${nome} | Prot: ${prot || '-'}` });
+                this.log('ENTRADA', `Kit: ${nome} | Prot: ${prot || '-'}`);
                 ['ent-cod','ent-nome','ent-prot','ent-venc'].forEach(id => document.getElementById(id).value = "");
                 alert("Salvo!");
             },
@@ -225,28 +251,28 @@
                 const item = this.dados.materiais[cod];
                 if(item && confirm(`Baixa no kit: ${item.nome}?`)) {
                     db.ref('materiais/' + cod).remove();
-                    db.ref('logs').push({ data: new Date().toLocaleString('pt-BR'), user: this.user.nome, acao: 'SAÍDA', desc: `Kit: ${item.nome}` });
+                    this.log('SAÍDA', `Kit: ${item.nome} (${cod})`);
+                    document.getElementById('sai-cod').value = "";
                 }
             },
+
+            log(acao, desc) { db.ref('logs').push({ data: new Date().toLocaleString('pt-BR'), user: this.user.nome, acao, desc }); },
 
             checkVencimento() {
                 const q = document.getElementById('lista-quarentena');
                 const v = document.getElementById('lista-vencendo');
                 if(!q) return;
                 q.innerHTML = ""; v.innerHTML = "";
-                
                 const hoje = new Date(); hoje.setHours(0,0,0,0);
-
                 Object.values(this.dados.materiais).forEach(m => {
                     if(!m.venc) return;
                     const dVenc = new Date(m.venc); dVenc.setHours(0,0,0,0);
                     const diff = Math.ceil((dVenc - hoje) / (1000*60*60*24));
                     const fmt = m.venc.split('-').reverse().join('/');
-
                     if(diff < 0) {
                         q.innerHTML += `<div class="alert-item bg-quarentena"><b>${m.nome}</b><br><small>Prot: ${m.prot || '-'} | Vencido em: ${fmt}</small></div>`;
                     } else if(diff <= 10) {
-                        v.innerHTML += `<div class="alert-item bg-vencendo"><b>${m.nome}</b><br><small>Prot: ${m.prot || '-'} | Vence em: ${fmt} (${diff} dias)</small></div>`;
+                        v.innerHTML += `<div class="alert-item bg-vencendo"><b>${m.nome}</b><br><small>Prot: ${m.prot || '-'} | Vence em: ${fmt} (${diff} d)</small></div>`;
                     }
                 });
                 document.getElementById('count-itens').innerText = Object.keys(this.dados.materiais).length;
@@ -255,12 +281,43 @@
             renderEstoque() {
                 const t = document.getElementById('busca').value.toLowerCase();
                 const corpo = document.getElementById('lista-est');
-                corpo.innerHTML = Object.values(this.dados.materiais).map(m => {
-                    if(m.nome.toLowerCase().includes(t) || m.cod.includes(t)) {
-                        return `<tr><td>${m.cod}</td><td style="text-align:left"><b>${m.nome}</b></td><td>${m.prot || '-'}</td><td>${m.venc ? m.venc.split('-').reverse().join('/') : '-'}</td></tr>`;
-                    }
-                    return '';
-                }).join('');
+                corpo.innerHTML = Object.values(this.dados.materiais).filter(m => m.nome.toLowerCase().includes(t) || m.cod.includes(t)).map(m => `<tr><td>${m.cod}</td><td style="text-align:left"><b>${m.nome}</b></td><td>${m.prot || '-'}</td><td>${m.venc ? m.venc.split('-').reverse().join('/') : '-'}</td></tr>`).join('');
+            },
+
+            renderMov() {
+                const container = document.getElementById('lista-movimentacao');
+                if(!container) return;
+                const busca = document.getElementById('busca-mov').value.toLowerCase();
+                const logs = Object.values(this.dados.logs).reverse().filter(l => (l.acao === 'ENTRADA' || l.acao === 'SAÍDA') && l.desc.toLowerCase().includes(busca));
+                container.innerHTML = logs.map(l => `<div class="log-row"><span><span class="badge-mov ${l.acao === 'ENTRADA' ? 'bg-entrada' : 'bg-saida'}">${l.acao}</span><b style="margin-left:10px">${l.desc}</b></span><small>${l.data}</small></div>`).join('');
+            },
+
+            renderLogs() {
+                const container = document.getElementById('lista-logs');
+                if(!container) return;
+                container.innerHTML = Object.values(this.dados.logs).reverse().map(l => `<div class="log-row"><span><b>[${l.data}]</b> ${l.user}: ${l.acao}</span></div>`).join('');
+            },
+
+            renderAdmin() {
+                const container = document.getElementById('lista-users');
+                if (!container || !this.user) return;
+                const isMaster = (this.user.login === 'iepeges');
+                container.innerHTML = Object.entries(this.dados.usuarios).map(([key, u]) => `<div class="log-row"><b>${u.nome}</b> (${u.login})${isMaster ? `<span class="icon-btn" onclick="app.delUser('${key}')" style="color:red">🗑️</span>` : ''}</div>`).join('');
+            },
+
+            exportarExcel() {
+                const movs = Object.values(this.dados.logs).filter(l => l.acao === 'ENTRADA' || l.acao === 'SAÍDA').reverse().map(m => ({ 'Data': m.data, 'Usuário': m.user, 'Tipo': m.acao, 'Descrição': m.desc }));
+                const ws = XLSX.utils.json_to_sheet(movs); const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Movimentação"); XLSX.writeFile(wb, `Estoque_Relatorio.xlsx`);
+            },
+
+            delUser(key) { if(confirm("Excluir colaborador?")) db.ref('usuarios/'+key).remove(); },
+            cadastrar() {
+                const n = document.getElementById('cad-nome').value.trim(); const p = document.getElementById('cad-pass').value;
+                if(!n || p.length < 4) return alert("Preencha nome e senha.");
+                const partes = n.split(' '); const login = (partes[0][0] + (partes[partes.length-1] || "")).toLowerCase();
+                db.ref('usuarios').push({ nome: n, login: login, pass: p, role: 'user' });
+                alert("Login: " + login); this.toggleAuth();
             },
 
             nav(v) {
