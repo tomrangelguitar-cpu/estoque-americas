@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CONTROLE DE ESTOQUE | v.1 - By Milton Rangel</title>
+    <title>CONTROLE DE ESTOQUE | v.1.4 - By Milton Rangel</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -34,6 +34,7 @@
         main { margin-left: 240px; margin-top: 65px; padding: 20px; }
         .card { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; }
         input, select { width: 100%; padding: 12px; border: 1px solid var(--cinza-borda); border-radius: 8px; margin-bottom: 10px; font-size: 16px; background: white; color: black; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 14px; color: var(--escuro); }
         
         .btn-principal { background: var(--roxo); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; font-size: 16px; }
         .btn-excel { background: #1d6f42; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; margin-bottom: 15px; font-weight: bold; }
@@ -46,6 +47,8 @@
         .alert-item { background: #fee2e2; border-left: 4px solid var(--vermelho); padding: 12px; margin-bottom: 8px; color: #b91c1c; border-radius: 8px; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .log-row { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
         .hidden { display: none !important; }
+
+        .icon-btn { cursor: pointer; font-size: 18px; padding: 5px; }
 
         @media (max-width: 768px) {
             .sidebar { width: 60px; padding: 10px; }
@@ -131,9 +134,19 @@
                     <h3>Entrada de Material</h3>
                     <button class="btn-principal" style="background:#444; margin-bottom:15px" onclick="app.scan('ent-cod', 's-ent')">📷 Escanear</button>
                     <div id="s-ent" class="scanner-view"></div>
-                    <label>Código</label><input type="text" id="ent-cod">
-                    <label>Material</label><input type="text" id="ent-nome">
-                    <label>Validade</label><input type="date" id="ent-venc">
+                    
+                    <label>Código do Produto</label>
+                    <input type="text" id="ent-cod" placeholder="Escanear ou digitar código">
+                    
+                    <label>Nome do Material</label>
+                    <input type="text" id="ent-nome" placeholder="Nome do item">
+                    
+                    <label>Número do Protocolo</label>
+                    <input type="text" id="ent-prot" placeholder="Ex: 2026-XYZ-001">
+                    
+                    <label>Data de Validade</label>
+                    <input type="date" id="ent-venc">
+                    
                     <button class="btn-principal" onclick="app.dbSalvar()">SALVAR ENTRADA</button>
                 </div>
             </div>
@@ -143,7 +156,8 @@
                     <h3>Saída de Material</h3>
                     <button class="btn-principal" style="background:#444; margin-bottom:15px" onclick="app.scan('sai-cod', 's-sai')">📷 Escanear</button>
                     <div id="s-sai" class="scanner-view"></div>
-                    <label>Código</label><input type="text" id="sai-cod">
+                    <label>Código do Produto</label>
+                    <input type="text" id="sai-cod" placeholder="Escanear para dar baixa">
                     <button class="btn-principal" style="background:var(--vermelho); margin-top:10px" onclick="app.dbRemover()">DAR BAIXA</button>
                 </div>
             </div>
@@ -179,12 +193,15 @@
         const db = firebase.database();
 
         const app = {
-            user: null, viewAtiva: 'login', dados: { materiais: {}, logs: {}, usuarios: {} }, carregado: false,
+            user: null, 
+            dados: { materiais: {}, logs: {}, usuarios: {} },
 
             init() {
                 db.ref('/').on('value', (snap) => {
-                    this.dados = snap.val() || { materiais: {}, logs: {}, usuarios: {} };
-                    this.carregado = true;
+                    const val = snap.val() || {};
+                    this.dados.materiais = val.materiais || {};
+                    this.dados.logs = val.logs || {};
+                    this.dados.usuarios = val.usuarios || {};
                     this.renderEstoque();
                     this.renderLogs();
                     this.renderMov();
@@ -200,55 +217,50 @@
                     this.user = { nome: 'MASTER', login: 'iepeges', role: 'admin' };
                     this.entrarSistema(); return;
                 }
-                const listaUsers = this.dados.usuarios ? Object.values(this.dados.usuarios) : [];
-                const found = listaUsers.find(x => x.login === u && x.pass === p);
-                if(found) { this.user = found; this.entrarSistema(); } else { alert("Acesso Inválido."); }
+                const found = Object.values(this.dados.usuarios).find(x => x.login === u && x.pass === p);
+                if(found) { this.user = found; this.entrarSistema(); } 
+                else { alert("Usuário ou senha incorretos."); }
             },
 
             entrarSistema() {
                 document.getElementById('section-auth').classList.add('hidden');
                 document.getElementById('layout-sistema').style.display = 'block';
                 document.getElementById('user-info').innerText = this.user.nome;
-                
                 if(this.user.role === 'admin') {
                     document.getElementById('nav-adm').classList.remove('hidden');
                     document.getElementById('nav-rel').classList.remove('hidden');
                 }
-                
                 this.nav('dash');
             },
 
-            exportarExcel() {
-                const logs = this.dados.logs ? Object.values(this.dados.logs).reverse() : [];
-                const movs = logs.filter(l => l.acao === 'ENTRADA' || l.acao === 'SAÍDA');
-                const dataFormatada = movs.map(m => ({
-                    'Data': m.data, 'Usuário': m.user, 'Tipo': m.acao, 'Descrição': m.desc
-                }));
-                const ws = XLSX.utils.json_to_sheet(dataFormatada);
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Movimentação");
-                XLSX.writeFile(wb, `Movimentacao_Estoque.xlsx`);
-            },
-
             dbSalvar() {
-                const cod = document.getElementById('ent-cod').value;
-                const nome = document.getElementById('ent-nome').value;
+                const cod = document.getElementById('ent-cod').value.trim();
+                const nome = document.getElementById('ent-nome').value.trim();
+                const prot = document.getElementById('ent-prot').value.trim();
                 const venc = document.getElementById('ent-venc').value;
-                if(!cod || !nome) return alert("Preencha os campos.");
-                db.ref('materiais/' + cod).set({ cod, nome, venc });
-                this.log('ENTRADA', `${nome} (${cod})`);
-                ['ent-cod','ent-nome','ent-venc'].forEach(id => document.getElementById(id).value = "");
-                alert("Entrada registrada!");
+                
+                if(!cod || !nome) return alert("Preencha Código e Material.");
+                
+                // Salva no banco com o novo campo de protocolo
+                db.ref('materiais/' + cod).set({ cod, nome, prot, venc });
+                
+                // Registra o log detalhado
+                this.log('ENTRADA', `${nome} (${cod}) | Prot: ${prot || 'N/A'}`);
+                
+                // Limpa os campos
+                ['ent-cod','ent-nome','ent-prot','ent-venc'].forEach(id => document.getElementById(id).value = "");
+                alert("Entrada registrada com sucesso!");
             },
 
             dbRemover() {
-                const cod = document.getElementById('sai-cod').value;
-                const item = (this.dados.materiais && this.dados.materiais[cod]) ? this.dados.materiais[cod] : null;
+                const cod = document.getElementById('sai-cod').value.trim();
+                const item = this.dados.materiais[cod];
                 if(!item) return alert("Item não encontrado.");
-                if(confirm(`Confirmar saída de: ${item.nome}?`)) {
+                if(confirm(`Baixa em: ${item.nome}?`)) {
                     db.ref('materiais/' + cod).remove();
                     this.log('SAÍDA', `${item.nome} (${cod})`);
                     document.getElementById('sai-cod').value = "";
+                    alert("Baixa concluída.");
                 }
             },
 
@@ -256,19 +268,11 @@
                 db.ref('logs').push({ data: new Date().toLocaleString('pt-BR'), user: this.user.nome, acao, desc });
             },
 
-            renderMov() {
-                const container = document.getElementById('lista-movimentacao');
-                const busca = document.getElementById('busca-mov').value.toLowerCase();
-                const logs = this.dados.logs ? Object.values(this.dados.logs).reverse() : [];
-                const movs = logs.filter(l => (l.acao === 'ENTRADA' || l.acao === 'SAÍDA') && l.desc.toLowerCase().includes(busca));
-                container.innerHTML = movs.map(l => `<div class="log-row"><span><span class="badge-mov ${l.acao === 'ENTRADA' ? 'bg-entrada' : 'bg-saida'}">${l.acao}</span><b style="margin-left:10px">${l.desc}</b></span><div style="text-align:right"><small>${l.data}</small><br><small>Por: ${l.user}</small></div></div>`).join('');
-            },
-
             renderEstoque() {
                 const t = document.getElementById('busca').value.toLowerCase();
                 const corpo = document.getElementById('lista-est');
-                corpo.innerHTML = "";
-                const materiais = this.dados.materiais ? Object.values(this.dados.materiais) : [];
+                if(!corpo) return; corpo.innerHTML = "";
+                const materiais = Object.values(this.dados.materiais);
                 materiais.forEach(m => {
                     if(m.nome.toLowerCase().includes(t) || m.cod.includes(t)) {
                         corpo.innerHTML += `<tr><td>${m.cod}</td><td>${m.nome}</td><td>${m.venc || '-'}</td></tr>`;
@@ -277,37 +281,26 @@
                 document.getElementById('count-itens').innerText = materiais.length;
             },
 
+            renderMov() {
+                const container = document.getElementById('lista-movimentacao');
+                if(!container) return;
+                const busca = document.getElementById('busca-mov').value.toLowerCase();
+                const logs = Object.values(this.dados.logs).reverse();
+                const movs = logs.filter(l => (l.acao === 'ENTRADA' || l.acao === 'SAÍDA') && l.desc.toLowerCase().includes(busca));
+                container.innerHTML = movs.map(l => `<div class="log-row"><span><span class="badge-mov ${l.acao === 'ENTRADA' ? 'bg-entrada' : 'bg-saida'}">${l.acao}</span><b style="margin-left:10px">${l.desc}</b></span><div style="text-align:right"><small>${l.data}</small><br><small>Por: ${l.user}</small></div></div>`).join('');
+            },
+
             renderLogs() {
-                const logs = this.dados.logs ? Object.entries(this.dados.logs).reverse() : [];
                 const container = document.getElementById('lista-logs');
+                if(!container) return;
+                const logs = Object.entries(this.dados.logs).reverse();
                 container.innerHTML = logs.map(([key, l]) => `<div class="log-row"><span><b>[${l.data}]</b> ${l.user}: ${l.acao}</span></div>`).join('');
             },
 
-            renderAdmin() {
-                const container = document.getElementById('lista-users');
-                const isMaster = (this.user && this.user.login === 'iepeges');
-                const usuarios = this.dados.usuarios ? Object.entries(this.dados.usuarios) : [];
-                container.innerHTML = usuarios.map(([key, u]) => `
-                    <div class="log-row">
-                        <div><b>${u.nome}</b> (${u.login})</div>
-                        <div style="display:flex; gap:5px">
-                            <select onchange="app.setRole('${key}', this.value)" ${isMaster ? '' : 'disabled'} style="width:100px; padding:2px; margin:0; font-size:12px">
-                                <option value="user" ${u.role === 'user' ? 'selected' : ''}>Padrão</option>
-                                <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
-                            </select>
-                            <button onclick="app.delUser('${key}')" style="color:red; background:none; border:none; cursor:pointer">🗑️</button>
-                        </div>
-                    </div>
-                `).join('');
-            },
-
-            setRole(key, novo) { db.ref('usuarios/'+key).update({ role: novo }).then(() => alert("Atualizado!")); },
-            delUser(key) { if(confirm("Excluir usuário?")) db.ref('usuarios/'+key).remove(); },
             checkVencimento() {
                 const container = document.getElementById('alertas-vencimento');
-                container.innerHTML = "";
-                const materiais = this.dados.materiais ? Object.values(this.dados.materiais) : [];
-                materiais.forEach(m => {
+                if(!container) return; container.innerHTML = "";
+                Object.values(this.dados.materiais).forEach(m => {
                     if(!m.venc) return;
                     const diff = Math.ceil((new Date(m.venc) - new Date()) / (1000*60*60*24));
                     if(diff <= 10) {
@@ -317,8 +310,48 @@
                 });
             },
 
+            renderAdmin() {
+                const container = document.getElementById('lista-users');
+                if (!container || !this.user) return;
+                const isMaster = (this.user.login === 'iepeges');
+                const users = Object.entries(this.dados.usuarios);
+                if(users.length === 0) { container.innerHTML = "<p>Nenhum colaborador.</p>"; return; }
+                container.innerHTML = users.map(([key, u]) => `
+                    <div class="log-row">
+                        <div><b>${u.nome}</b> (${u.login})</div>
+                        <div style="display:flex; gap:15px; align-items:center">
+                            <select onchange="app.setRole('${key}', this.value)" ${isMaster ? '' : 'disabled'} style="width:100px; padding:2px; margin:0; font-size:12px">
+                                <option value="user" ${u.role === 'user' ? 'selected' : ''}>Padrão</option>
+                                <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
+                            </select>
+                            ${isMaster ? `
+                                <span class="icon-btn" onclick="app.mudarSenha('${key}', '${u.nome}')">🔑</span>
+                                <span class="icon-btn" onclick="app.delUser('${key}')" style="color:red">🗑️</span>
+                            ` : ''}
+                        </div>
+                    </div>`).join('');
+            },
+
+            mudarSenha(key, nome) {
+                const nova = prompt(`Nova senha para ${nome}:`);
+                if (nova && nova.trim().length >= 4) {
+                    db.ref('usuarios/' + key).update({ pass: nova.trim() }).then(() => alert("Senha atualizada!"));
+                }
+            },
+
+            setRole(key, novo) { db.ref('usuarios/'+key).update({ role: novo }).then(() => alert("Permissão alterada!")); },
+            delUser(key) { if(confirm("Excluir?")) db.ref('usuarios/'+key).remove(); },
+
+            exportarExcel() {
+                const movs = Object.values(this.dados.logs).filter(l => l.acao === 'ENTRADA' || l.acao === 'SAÍDA').reverse()
+                    .map(m => ({ 'Data': m.data, 'Usuário': m.user, 'Tipo': m.acao, 'Descrição': m.desc }));
+                const ws = XLSX.utils.json_to_sheet(movs);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Movimentação");
+                XLSX.writeFile(wb, `Estoque_Relatorio.xlsx`);
+            },
+
             nav(v) {
-                this.viewAtiva = v;
                 document.querySelectorAll('.view').forEach(x => x.classList.add('hidden'));
                 document.querySelectorAll('.nav-btn').forEach(x => x.classList.remove('active'));
                 document.getElementById('v-'+v).classList.remove('hidden');
@@ -335,15 +368,18 @@
             cadastrar() {
                 const n = document.getElementById('cad-nome').value.trim();
                 const p = document.getElementById('cad-pass').value;
-                if(!n || p.length < 4) return alert("Preencha tudo.");
+                if(!n || p.length < 4) return alert("Preencha nome e senha.");
                 const partes = n.split(' ');
                 const login = (partes[0][0] + (partes[partes.length-1] || "")).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
                 db.ref('usuarios').push({ nome: n, login: login, pass: p, role: 'user' });
-                alert("Criado! Login: " + login);
-                this.toggleAuth();
+                alert("Login gerado: " + login); this.toggleAuth();
             },
 
-            toggleAuth() { document.getElementById('card-login').classList.toggle('hidden'); document.getElementById('card-cad').classList.toggle('hidden'); },
+            toggleAuth() { 
+                document.getElementById('card-login').classList.toggle('hidden'); 
+                document.getElementById('card-cad').classList.toggle('hidden'); 
+            },
+            
             globalEnter(e) { if(e.key === "Enter") this.login(); }
         };
 
