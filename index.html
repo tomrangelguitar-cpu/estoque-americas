@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CONTROLE DE ESTOQUE | v.1.5 - By Milton Rangel</title>
+    <title>CONTROLE DE ESTOQUE | v.1.6 - By Milton Rangel</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -38,6 +38,10 @@
         
         .btn-principal { background: var(--roxo); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; font-size: 16px; }
         .btn-excel { background: #1d6f42; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; margin-bottom: 15px; font-weight: bold; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
+        th { background: #f9f9f9; padding: 12px; font-size: 13px; color: var(--escuro); text-transform: uppercase; border: 1px solid #eee; }
+        td { padding: 10px; border: 1px solid #eee; font-size: 14px; text-align: center; }
 
         .badge-mov { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; color: white; }
         .bg-entrada { background: var(--verde); }
@@ -111,27 +115,34 @@
 
             <div id="v-mov" class="view hidden">
                 <div class="card">
-                    <h3>Movimentação de Materiais</h3>
+                    <h3>Movimentação de Kits</h3>
                     <button class="btn-excel" onclick="app.exportarExcel()">📗 Exportar Excel</button>
-                    <input type="text" id="busca-mov" placeholder="Buscar por material ou código..." onkeyup="app.renderMov()">
+                    <input type="text" id="busca-mov" placeholder="Buscar por kit, código ou protocolo..." onkeyup="app.renderMov()">
                     <div id="lista-movimentacao" style="max-height:600px; overflow-y:auto"></div>
                 </div>
             </div>
 
             <div id="v-est" class="view hidden">
                 <div class="card">
-                    <h3>Itens Disponíveis</h3>
+                    <h3>Kits Disponíveis em Estoque</h3>
                     <input type="text" id="busca" placeholder="Filtrar estoque..." onkeyup="app.renderEstoque()">
-                    <table style="width:100%; border-collapse:collapse; margin-top:10px" border="1" bordercolor="#eee">
-                        <thead><tr style="background:#f9f9f9"><th>Cód</th><th>Material</th><th>Vencimento</th></tr></thead>
-                        <tbody id="lista-est" style="text-align:center"></tbody>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Nome do Kit</th>
+                                <th>Protocolo</th>
+                                <th>Vencimento</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lista-est"></tbody>
                     </table>
                 </div>
             </div>
 
             <div id="v-ent" class="view hidden">
                 <div class="card">
-                    <h3>Entrada de Material</h3>
+                    <h3>Entrada de Kit</h3>
                     <button class="btn-principal" style="background:#444; margin-bottom:15px" onclick="app.scan('ent-cod', 's-ent')">📷 Escanear</button>
                     <div id="s-ent" class="scanner-view"></div>
                     
@@ -153,7 +164,7 @@
 
             <div id="v-sai" class="view hidden">
                 <div class="card">
-                    <h3>Saída de Material</h3>
+                    <h3>Saída de Kit</h3>
                     <button class="btn-principal" style="background:#444; margin-bottom:15px" onclick="app.scan('sai-cod', 's-sai')">📷 Escanear</button>
                     <div id="s-sai" class="scanner-view"></div>
                     <label>Código do Produto</label>
@@ -238,11 +249,10 @@
                 const nome = document.getElementById('ent-nome').value.trim();
                 const prot = document.getElementById('ent-prot').value.trim();
                 const venc = document.getElementById('ent-venc').value;
-                
                 if(!cod || !nome) return alert("Preencha Código e Nome do Kit.");
                 
                 db.ref('materiais/' + cod).set({ cod, nome, prot, venc });
-                this.log('ENTRADA', `Kit: ${nome} (${cod}) | Prot: ${prot || 'N/A'}`);
+                this.log('ENTRADA', `Kit: ${nome} | Prot: ${prot || '-'}`);
                 
                 ['ent-cod','ent-nome','ent-prot','ent-venc'].forEach(id => document.getElementById(id).value = "");
                 alert("Entrada do Kit registrada!");
@@ -270,8 +280,14 @@
                 if(!corpo) return; corpo.innerHTML = "";
                 const materiais = Object.values(this.dados.materiais);
                 materiais.forEach(m => {
-                    if(m.nome.toLowerCase().includes(t) || m.cod.includes(t)) {
-                        corpo.innerHTML += `<tr><td>${m.cod}</td><td>${m.nome}</td><td>${m.venc || '-'}</td></tr>`;
+                    if(m.nome.toLowerCase().includes(t) || m.cod.includes(t) || (m.prot && m.prot.toLowerCase().includes(t))) {
+                        corpo.innerHTML += `
+                            <tr>
+                                <td>${m.cod}</td>
+                                <td style="text-align:left"><b>${m.nome}</b></td>
+                                <td>${m.prot || '-'}</td>
+                                <td>${m.venc ? m.venc.split('-').reverse().join('/') : '-'}</td>
+                            </tr>`;
                     }
                 });
                 document.getElementById('count-itens').innerText = materiais.length;
@@ -301,7 +317,7 @@
                     const diff = Math.ceil((new Date(m.venc) - new Date()) / (1000*60*60*24));
                     if(diff <= 10) {
                         const dataFormatada = m.venc.split('-').reverse().join('/');
-                        container.innerHTML += `<div class="alert-item"><b>${m.nome}</b> (${m.cod}) - Vencimento: <b>${dataFormatada}</b></div>`;
+                        container.innerHTML += `<div class="alert-item"><b>${m.nome}</b> - Prot: ${m.prot || '-'} - Vence em: <b>${dataFormatada}</b></div>`;
                     }
                 });
             },
