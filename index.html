@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ESTOQUE DE KIT | v.1.9 - By Milton Rangel</title>
+    <title>CONTROLE DE ESTOQUE | v.2.0 - By Milton Rangel</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -57,10 +57,13 @@
         .bg-entrada { background: var(--verde); }
         .bg-saida { background: var(--vermelho); }
 
+        .filtros-inline { display: flex; gap: 10px; margin-bottom: 15px; }
+        .filtros-inline > div { flex: 1; }
+
         .hidden { display: none !important; }
         .scanner-view { width: 100%; height: 250px; background: #000; display: none; border-radius: 12px; margin-bottom: 15px; border: 3px solid var(--roxo); overflow: hidden; }
 
-        @media (max-width: 768px) { .sidebar { width: 60px; } .nav-btn span { display: none; } main { margin-left: 60px; } }
+        @media (max-width: 768px) { .sidebar { width: 60px; } .nav-btn span { display: none; } main { margin-left: 60px; } .filtros-inline { flex-direction: column; } }
     </style>
 </head>
 <body onkeydown="app.globalEnter(event)">
@@ -76,7 +79,6 @@
         </div>
         <div id="card-cad" class="card-auth hidden">
             <h3>Novo Cadastro</h3>
-            <p style="font-size: 12px; color: gray; margin-bottom: 15px;">Preencha para solicitar acesso ao administrador.</p>
             <input type="text" id="cad-nome" placeholder="Nome Completo">
             <input type="password" id="cad-pass" placeholder="Senha (mín. 4 digitos)" maxlength="8">
             <button class="btn-principal" onclick="app.cadastrar()">ENVIAR SOLICITAÇÃO</button>
@@ -124,19 +126,24 @@
                 </div>
             </div>
 
-            <div id="v-adm" class="view hidden">
-                <div class="card">
-                    <h3>Gestão de Colaboradores</h3>
-                    <p style="color:gray; font-size: 13px;">Lista de usuários com acesso ao sistema.</p>
-                    <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
-                    <div id="lista-users">Carregando usuários...</div>
-                </div>
-            </div>
-
             <div id="v-est" class="view hidden">
                 <div class="card">
-                    <h3>Estoque Disponível</h3>
-                    <input type="text" id="busca" placeholder="Filtrar estoque..." onkeyup="app.renderEstoque()">
+                    <h3>Kits Disponíveis em Estoque</h3>
+                    <div class="filtros-inline">
+                        <div>
+                            <label>Filtrar com:</label>
+                            <select id="filtro-coluna" onchange="app.renderEstoque()">
+                                <option value="nome">Nome do Kit</option>
+                                <option value="cod">Código</option>
+                                <option value="prot">Protocolo</option>
+                                <option value="venc">Data de Vencimento</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Termo de Busca:</label>
+                            <input type="text" id="busca" placeholder="Digite para filtrar..." onkeyup="app.renderEstoque()">
+                        </div>
+                    </div>
                     <table>
                         <thead><tr><th>Código</th><th>Nome do Kit</th><th>Protocolo</th><th>Vencimento</th></tr></thead>
                         <tbody id="lista-est"></tbody>
@@ -146,7 +153,7 @@
 
             <div id="v-mov" class="view hidden">
                 <div class="card">
-                    <h3>Histórico de Movimentação</h3>
+                    <h3>Movimentação de Kits</h3>
                     <button class="btn-excel" onclick="app.exportarExcel()">📗 Exportar Excel</button>
                     <input type="text" id="busca-mov" placeholder="Filtrar movimentação..." onkeyup="app.renderMov()">
                     <div id="lista-movimentacao"></div>
@@ -177,6 +184,7 @@
             </div>
 
             <div id="v-rel" class="view hidden"><div class="card"><h3>Logs do Sistema</h3><div id="lista-logs"></div></div></div>
+            <div id="v-adm" class="view hidden"><div class="card"><h3>Gestão de Colaboradores</h3><div id="lista-users"></div></div></div>
         </main>
     </div>
 
@@ -214,13 +222,11 @@
             login() {
                 const u = document.getElementById('login-user').value.toLowerCase().trim();
                 const p = document.getElementById('login-pass').value.trim();
-                
                 if(u === 'iepeges' && p === 'itc@123@') {
                     this.user = { nome: 'MASTER', login: 'iepeges', role: 'admin' };
                 } else {
                     this.user = Object.values(this.dados.usuarios).find(x => x.login === u && x.pass === p);
                 }
-
                 if(this.user) {
                     document.getElementById('section-auth').classList.add('hidden');
                     document.getElementById('layout-sistema').style.display = 'block';
@@ -236,30 +242,25 @@
             cadastrar() {
                 const n = document.getElementById('cad-nome').value.trim();
                 const p = document.getElementById('cad-pass').value.trim();
-                if(n.length < 3 || p.length < 4) return alert("Preencha nome e senha (mínimo 4 digitos).");
+                if(n.length < 3 || p.length < 4) return alert("Erro: Nome e Senha.");
                 const login = n.split(' ')[0].toLowerCase() + Math.floor(Math.random()*100);
                 db.ref('usuarios').push({ nome: n, login: login, pass: p, role: 'user' });
-                alert("Solicitação enviada! Seu login sugerido: " + login);
+                alert("Solicitação enviada! Login: " + login);
                 this.toggleAuth();
             },
 
-            delUser(key) {
-                if(confirm("Deseja remover este acesso permanentemente?")) {
-                    db.ref('usuarios/' + key).remove();
-                }
-            },
+            delUser(key) { if(confirm("Remover acesso?")) db.ref('usuarios/' + key).remove(); },
 
             renderAdmin() {
                 const container = document.getElementById('lista-users');
                 if(!container) return;
                 const isMaster = (this.user && this.user.login === 'iepeges');
-                const html = Object.entries(this.dados.usuarios).map(([key, u]) => `
+                container.innerHTML = Object.entries(this.dados.usuarios).map(([key, u]) => `
                     <div class="log-row">
                         <span><b>${u.nome}</b> <br> <small style="color:var(--roxo)">Login: ${u.login} | Senha: ${u.pass}</small></span>
                         ${isMaster ? `<button onclick="app.delUser('${key}')" style="background:none; border:none; color:red; cursor:pointer; font-size:18px">🗑️</button>` : ''}
                     </div>
                 `).join('');
-                container.innerHTML = html || "<p style='color:gray'>Nenhum usuário cadastrado.</p>";
             },
 
             dbSalvar() {
@@ -281,33 +282,36 @@
                     db.ref('materiais/' + cod).remove();
                     db.ref('logs').push({ data: new Date().toLocaleString('pt-BR'), user: this.user.nome, acao: 'SAÍDA', desc: `Kit: ${item.nome} (${cod})` });
                     document.getElementById('sai-cod').value = "";
-                } else if(!item) { alert("Código não encontrado em estoque."); }
+                } else if(!item) { alert("Código não encontrado."); }
             },
 
             checkVencimento() {
                 const q = document.getElementById('lista-quarentena');
                 const v = document.getElementById('lista-vencendo');
-                if(!q) return;
-                q.innerHTML = ""; v.innerHTML = "";
+                if(!q) return; q.innerHTML = ""; v.innerHTML = "";
                 const hoje = new Date(); hoje.setHours(0,0,0,0);
                 Object.values(this.dados.materiais).forEach(m => {
                     if(!m.venc) return;
                     const dVenc = new Date(m.venc); dVenc.setHours(0,0,0,0);
                     const diff = Math.ceil((dVenc - hoje) / (1000*60*60*24));
                     const fmt = m.venc.split('-').reverse().join('/');
-                    if(diff < 0) {
-                        q.innerHTML += `<div class="alert-item bg-quarentena"><b>${m.nome}</b><br><small>Prot: ${m.prot || '-'} | Vencido em: ${fmt}</small></div>`;
-                    } else if(diff <= 10) {
-                        v.innerHTML += `<div class="alert-item bg-vencendo"><b>${m.nome}</b><br><small>Prot: ${m.prot || '-'} | Vence em: ${fmt} (${diff} d)</small></div>`;
-                    }
+                    if(diff < 0) q.innerHTML += `<div class="alert-item bg-quarentena"><b>${m.nome}</b><br><small>Prot: ${m.prot || '-'} | Vencido em: ${fmt}</small></div>`;
+                    else if(diff <= 10) v.innerHTML += `<div class="alert-item bg-vencendo"><b>${m.nome}</b><br><small>Prot: ${m.prot || '-'} | Vence em: ${fmt} (${diff} d)</small></div>`;
                 });
                 document.getElementById('count-itens').innerText = Object.keys(this.dados.materiais).length;
             },
 
             renderEstoque() {
-                const t = document.getElementById('busca').value.toLowerCase();
+                const col = document.getElementById('filtro-coluna').value;
+                const busca = document.getElementById('busca').value.toLowerCase();
                 const corpo = document.getElementById('lista-est');
-                corpo.innerHTML = Object.values(this.dados.materiais).filter(m => m.nome.toLowerCase().includes(t) || m.cod.includes(t)).map(m => `<tr><td>${m.cod}</td><td style="text-align:left"><b>${m.nome}</b></td><td>${m.prot || '-'}</td><td>${m.venc ? m.venc.split('-').reverse().join('/') : '-'}</td></tr>`).join('');
+                
+                corpo.innerHTML = Object.values(this.dados.materiais).filter(m => {
+                    let valor = (m[col] || "").toLowerCase();
+                    // Ajuste para busca de data (DD/MM/YYYY) caso o usuário digite no formato brasileiro
+                    if(col === 'venc' && valor) valor = valor.split('-').reverse().join('/');
+                    return valor.includes(busca);
+                }).map(m => `<tr><td>${m.cod}</td><td style="text-align:left"><b>${m.nome}</b></td><td>${m.prot || '-'}</td><td>${m.venc ? m.venc.split('-').reverse().join('/') : '-'}</td></tr>`).join('');
             },
 
             renderMov() {
