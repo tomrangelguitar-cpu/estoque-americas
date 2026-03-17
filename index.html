@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CONTROLE DE ESTOQUE | v.1.1.0 - By Milton Rangel</title>
+    <title>ESTOQUE DE KIT | v.1.9 - By Milton Rangel</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -59,7 +59,6 @@
 
         .hidden { display: none !important; }
         .scanner-view { width: 100%; height: 250px; background: #000; display: none; border-radius: 12px; margin-bottom: 15px; border: 3px solid var(--roxo); overflow: hidden; }
-        .icon-btn { cursor: pointer; font-size: 18px; padding: 5px; }
 
         @media (max-width: 768px) { .sidebar { width: 60px; } .nav-btn span { display: none; } main { margin-left: 60px; } }
     </style>
@@ -73,13 +72,14 @@
             <input type="text" id="login-user" placeholder="Usuário">
             <input type="password" id="login-pass" placeholder="Senha">
             <button class="btn-principal" onclick="app.login()">ACESSAR</button>
-            <p style="text-align:center; margin-top:15px;"><a href="#" onclick="app.toggleAuth()" style="color:var(--roxo); font-weight:bold; text-decoration:none">Novo Cadastro</a></p>
+            <p style="text-align:center; margin-top:15px;"><a href="#" onclick="app.toggleAuth()" style="color:var(--roxo); font-weight:bold; text-decoration:none">Solicitar Novo Cadastro</a></p>
         </div>
         <div id="card-cad" class="card-auth hidden">
             <h3>Novo Cadastro</h3>
+            <p style="font-size: 12px; color: gray; margin-bottom: 15px;">Preencha para solicitar acesso ao administrador.</p>
             <input type="text" id="cad-nome" placeholder="Nome Completo">
-            <input type="password" id="cad-pass" placeholder="Senha" maxlength="8">
-            <button class="btn-principal" onclick="app.cadastrar()">GERAR ACESSO</button>
+            <input type="password" id="cad-pass" placeholder="Senha (mín. 4 digitos)" maxlength="8">
+            <button class="btn-principal" onclick="app.cadastrar()">ENVIAR SOLICITAÇÃO</button>
             <p style="text-align:center; margin-top:15px;"><a href="#" onclick="app.toggleAuth()" style="color:gray; text-decoration:none">Voltar</a></p>
         </div>
     </div>
@@ -103,7 +103,7 @@
             <button id="nav-ent" class="nav-btn" onclick="app.nav('ent')">📥 <span>Entrada</span></button>
             <button id="nav-sai" class="nav-btn" onclick="app.nav('sai')">📤 <span>Saída</span></button>
             <button id="nav-rel" class="nav-btn hidden" onclick="app.nav('rel')">📋 <span>Logs Sistema</span></button>
-            <button id="nav-adm" class="nav-btn hidden" onclick="app.nav('adm')">⚙️ <span>Cadastro Usuários</span></button>
+            <button id="nav-adm" class="nav-btn hidden" onclick="app.nav('adm')">⚙️ <span>Gestão Usuários</span></button>
         </aside>
 
         <main>
@@ -114,7 +114,7 @@
                         <div id="lista-quarentena"></div>
                     </div>
                     <div class="col-venc">
-                        <div class="titulo-setor" style="color:var(--alerta-laranja)">⚠️ Vencendo (Próximos 10 dias)</div>
+                        <div class="titulo-setor" style="color:var(--alerta-laranja)">⚠️ Vencendo (10 dias)</div>
                         <div id="lista-vencendo"></div>
                     </div>
                 </div>
@@ -124,18 +124,18 @@
                 </div>
             </div>
 
-            <div id="v-mov" class="view hidden">
+            <div id="v-adm" class="view hidden">
                 <div class="card">
-                    <h3>Movimentação de Kits</h3>
-                    <button class="btn-excel" onclick="app.exportarExcel()">📗 Exportar Excel</button>
-                    <input type="text" id="busca-mov" placeholder="Buscar por kit, código ou protocolo..." onkeyup="app.renderMov()">
-                    <div id="lista-movimentacao" style="max-height:600px; overflow-y:auto"></div>
+                    <h3>Gestão de Colaboradores</h3>
+                    <p style="color:gray; font-size: 13px;">Lista de usuários com acesso ao sistema.</p>
+                    <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
+                    <div id="lista-users">Carregando usuários...</div>
                 </div>
             </div>
 
             <div id="v-est" class="view hidden">
                 <div class="card">
-                    <h3>Kits Disponíveis em Estoque</h3>
+                    <h3>Estoque Disponível</h3>
                     <input type="text" id="busca" placeholder="Filtrar estoque..." onkeyup="app.renderEstoque()">
                     <table>
                         <thead><tr><th>Código</th><th>Nome do Kit</th><th>Protocolo</th><th>Vencimento</th></tr></thead>
@@ -144,15 +144,24 @@
                 </div>
             </div>
 
+            <div id="v-mov" class="view hidden">
+                <div class="card">
+                    <h3>Histórico de Movimentação</h3>
+                    <button class="btn-excel" onclick="app.exportarExcel()">📗 Exportar Excel</button>
+                    <input type="text" id="busca-mov" placeholder="Filtrar movimentação..." onkeyup="app.renderMov()">
+                    <div id="lista-movimentacao"></div>
+                </div>
+            </div>
+
             <div id="v-ent" class="view hidden">
                 <div class="card">
                     <h3>Entrada de Kit</h3>
                     <button class="btn-principal" style="background:#444; margin-bottom:15px" onclick="app.scan('ent-cod', 's-ent')">📷 Escanear</button>
                     <div id="s-ent" class="scanner-view"></div>
-                    <label>Código do Produto</label><input type="text" id="ent-cod">
+                    <label>Código</label><input type="text" id="ent-cod">
                     <label>Nome do Kit</label><input type="text" id="ent-nome">
-                    <label>Número do Protocolo</label><input type="text" id="ent-prot">
-                    <label>Data de Validade</label><input type="date" id="ent-venc">
+                    <label>Protocolo</label><input type="text" id="ent-prot">
+                    <label>Validade</label><input type="date" id="ent-venc">
                     <button class="btn-principal" onclick="app.dbSalvar()">SALVAR ENTRADA</button>
                 </div>
             </div>
@@ -167,19 +176,7 @@
                 </div>
             </div>
 
-            <div id="v-rel" class="view hidden">
-                <div class="card">
-                    <h3>Logs de Sistema</h3>
-                    <div id="lista-logs" style="max-height:500px; overflow-y:auto"></div>
-                </div>
-            </div>
-
-            <div id="v-adm" class="view hidden">
-                <div class="card">
-                    <h3>Gestão de Colaboradores</h3>
-                    <div id="lista-users"></div>
-                </div>
-            </div>
+            <div id="v-rel" class="view hidden"><div class="card"><h3>Logs do Sistema</h3><div id="lista-logs"></div></div></div>
         </main>
     </div>
 
@@ -217,11 +214,13 @@
             login() {
                 const u = document.getElementById('login-user').value.toLowerCase().trim();
                 const p = document.getElementById('login-pass').value.trim();
+                
                 if(u === 'iepeges' && p === 'itc@123@') {
                     this.user = { nome: 'MASTER', login: 'iepeges', role: 'admin' };
                 } else {
                     this.user = Object.values(this.dados.usuarios).find(x => x.login === u && x.pass === p);
                 }
+
                 if(this.user) {
                     document.getElementById('section-auth').classList.add('hidden');
                     document.getElementById('layout-sistema').style.display = 'block';
@@ -231,7 +230,36 @@
                         document.getElementById('nav-rel').classList.remove('hidden');
                     }
                     this.nav('dash');
-                } else { alert("Login incorreto."); }
+                } else { alert("Dados incorretos."); }
+            },
+
+            cadastrar() {
+                const n = document.getElementById('cad-nome').value.trim();
+                const p = document.getElementById('cad-pass').value.trim();
+                if(n.length < 3 || p.length < 4) return alert("Preencha nome e senha (mínimo 4 digitos).");
+                const login = n.split(' ')[0].toLowerCase() + Math.floor(Math.random()*100);
+                db.ref('usuarios').push({ nome: n, login: login, pass: p, role: 'user' });
+                alert("Solicitação enviada! Seu login sugerido: " + login);
+                this.toggleAuth();
+            },
+
+            delUser(key) {
+                if(confirm("Deseja remover este acesso permanentemente?")) {
+                    db.ref('usuarios/' + key).remove();
+                }
+            },
+
+            renderAdmin() {
+                const container = document.getElementById('lista-users');
+                if(!container) return;
+                const isMaster = (this.user && this.user.login === 'iepeges');
+                const html = Object.entries(this.dados.usuarios).map(([key, u]) => `
+                    <div class="log-row">
+                        <span><b>${u.nome}</b> <br> <small style="color:var(--roxo)">Login: ${u.login} | Senha: ${u.pass}</small></span>
+                        ${isMaster ? `<button onclick="app.delUser('${key}')" style="background:none; border:none; color:red; cursor:pointer; font-size:18px">🗑️</button>` : ''}
+                    </div>
+                `).join('');
+                container.innerHTML = html || "<p style='color:gray'>Nenhum usuário cadastrado.</p>";
             },
 
             dbSalvar() {
@@ -239,24 +267,22 @@
                 const nome = document.getElementById('ent-nome').value.trim();
                 const prot = document.getElementById('ent-prot').value.trim();
                 const venc = document.getElementById('ent-venc').value;
-                if(!cod || !nome) return alert("Preencha Código e Nome.");
+                if(!cod || !nome) return alert("Erro: Código e Nome.");
                 db.ref('materiais/' + cod).set({ cod, nome, prot, venc });
-                this.log('ENTRADA', `Kit: ${nome} | Prot: ${prot || '-'}`);
+                db.ref('logs').push({ data: new Date().toLocaleString('pt-BR'), user: this.user.nome, acao: 'ENTRADA', desc: `Kit: ${nome} | Prot: ${prot || '-'}` });
                 ['ent-cod','ent-nome','ent-prot','ent-venc'].forEach(id => document.getElementById(id).value = "");
-                alert("Salvo!");
+                alert("Entrada registrada!");
             },
 
             dbRemover() {
                 const cod = document.getElementById('sai-cod').value.trim();
                 const item = this.dados.materiais[cod];
-                if(item && confirm(`Baixa no kit: ${item.nome}?`)) {
+                if(item && confirm(`Dar baixa no kit: ${item.nome}?`)) {
                     db.ref('materiais/' + cod).remove();
-                    this.log('SAÍDA', `Kit: ${item.nome} (${cod})`);
+                    db.ref('logs').push({ data: new Date().toLocaleString('pt-BR'), user: this.user.nome, acao: 'SAÍDA', desc: `Kit: ${item.nome} (${cod})` });
                     document.getElementById('sai-cod').value = "";
-                }
+                } else if(!item) { alert("Código não encontrado em estoque."); }
             },
-
-            log(acao, desc) { db.ref('logs').push({ data: new Date().toLocaleString('pt-BR'), user: this.user.nome, acao, desc }); },
 
             checkVencimento() {
                 const q = document.getElementById('lista-quarentena');
@@ -298,26 +324,10 @@
                 container.innerHTML = Object.values(this.dados.logs).reverse().map(l => `<div class="log-row"><span><b>[${l.data}]</b> ${l.user}: ${l.acao}</span></div>`).join('');
             },
 
-            renderAdmin() {
-                const container = document.getElementById('lista-users');
-                if (!container || !this.user) return;
-                const isMaster = (this.user.login === 'iepeges');
-                container.innerHTML = Object.entries(this.dados.usuarios).map(([key, u]) => `<div class="log-row"><b>${u.nome}</b> (${u.login})${isMaster ? `<span class="icon-btn" onclick="app.delUser('${key}')" style="color:red">🗑️</span>` : ''}</div>`).join('');
-            },
-
             exportarExcel() {
                 const movs = Object.values(this.dados.logs).filter(l => l.acao === 'ENTRADA' || l.acao === 'SAÍDA').reverse().map(m => ({ 'Data': m.data, 'Usuário': m.user, 'Tipo': m.acao, 'Descrição': m.desc }));
                 const ws = XLSX.utils.json_to_sheet(movs); const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Movimentação"); XLSX.writeFile(wb, `Estoque_Relatorio.xlsx`);
-            },
-
-            delUser(key) { if(confirm("Excluir colaborador?")) db.ref('usuarios/'+key).remove(); },
-            cadastrar() {
-                const n = document.getElementById('cad-nome').value.trim(); const p = document.getElementById('cad-pass').value;
-                if(!n || p.length < 4) return alert("Preencha nome e senha.");
-                const partes = n.split(' '); const login = (partes[0][0] + (partes[partes.length-1] || "")).toLowerCase();
-                db.ref('usuarios').push({ nome: n, login: login, pass: p, role: 'user' });
-                alert("Login: " + login); this.toggleAuth();
+                XLSX.utils.book_append_sheet(wb, ws, "Movimentação"); XLSX.writeFile(wb, `Relatorio_Estoque.xlsx`);
             },
 
             nav(v) {
