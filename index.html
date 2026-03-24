@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CONTROLE DE ESTOQUE | v.3.3</title>
+    <title>CONTROLE DE ESTOQUE | v.3.2</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -28,8 +28,8 @@
         header { background: var(--escuro); color: white; height: 65px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; position: fixed; top: 0; width: 100%; z-index: 1000; }
         header img { height: 28px; filter: brightness(0) invert(1); }
 
-        .sidebar { position: fixed; top: 65px; left: 0; bottom: 0; width: 240px; background: #22163f; padding: 20px; overflow-y: auto; }
-        .nav-btn { background: transparent; border: none; color: #cbb2ff; padding: 12px; text-align: left; border-radius: 8px; cursor: pointer; width: 100%; display: flex; align-items: center; gap: 10px; margin-bottom: 5px; font-size: 14px; }
+        .sidebar { position: fixed; top: 65px; left: 0; bottom: 0; width: 240px; background: #22163f; padding: 20px; }
+        .nav-btn { background: transparent; border: none; color: #cbb2ff; padding: 12px; text-align: left; border-radius: 8px; cursor: pointer; width: 100%; display: flex; align-items: center; gap: 10px; margin-bottom: 5px; }
         .nav-btn.active { background: var(--roxo); color: white; }
 
         main { margin-left: 240px; margin-top: 65px; padding: 20px; }
@@ -57,7 +57,6 @@
         .badge-mov { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; color: white; }
         .bg-entrada { background: var(--verde); }
         .bg-saida { background: var(--vermelho); }
-        .bg-estorno { background: #3498db; }
 
         .info-detalhada { font-size: 11px; color: #666; margin-top: 4px; display: block; line-height: 1.4; }
 
@@ -110,7 +109,6 @@
             <button id="nav-mov" class="nav-btn" onclick="app.nav('mov')">🔄 <span>Movimentação</span></button>
             <button id="nav-ent" class="nav-btn" onclick="app.nav('ent')">📥 <span>Entrada</span></button>
             <button id="nav-sai" class="nav-btn" onclick="app.nav('sai')">📤 <span>Saída</span></button>
-            <button id="nav-estorno" class="nav-btn" onclick="app.nav('estorno')">⏪ <span>Estorno</span></button>
             <button id="nav-rel" class="nav-btn hidden" onclick="app.nav('rel')">📋 <span>Logs Sistema</span></button>
             <button id="nav-adm" class="nav-btn hidden" onclick="app.nav('adm')">⚙️ <span>Gestão Usuários</span></button>
         </aside>
@@ -128,7 +126,7 @@
                     </div>
                 </div>
                 <div class="card" style="text-align:center">
-                    <h1 id="count-itens" style="margin:0; color:var(--roxo); font-size: 48px;">0</h1>
+                    <h1 id="count-itens" style="margin:0; color:var(--roxo)">0</h1>
                     <p style="margin:0; color:gray">Total de Kits em estoque</p>
                 </div>
             </div>
@@ -175,34 +173,8 @@
                     <h3>Saída de Kit</h3>
                     <button class="btn-principal" style="background:#444; margin-bottom:15px" onclick="app.scan('sai-cod', 's-sai')">📷 Escanear Código</button>
                     <div id="s-sai" class="scanner-view"></div>
-                    
-                    <label>Código do Produto</label>
-                    <input type="text" id="sai-cod">
-                    
-                    <label>Motivo da Saída</label>
-                    <select id="sai-motivo" onchange="app.validaPaciente()">
-                        <option value="Consumo">Consumo</option>
-                        <option value="Quarentena">Quarentena</option>
-                        <option value="Destruição">Destruição</option>
-                        <option value="Devolução">Devolução</option>
-                    </select>
-
-                    <label id="label-paciente">Código do Paciente (Obrigatório para Consumo)</label>
-                    <input type="text" id="sai-paciente" placeholder="ID do Paciente">
-
-                    <button class="btn-principal" id="btn-dar-baixa" style="background:var(--vermelho); margin-top:10px" onclick="app.dbRemover()">DAR BAIXA</button>
-                </div>
-            </div>
-
-            <div id="v-estorno" class="view hidden">
-                <div class="card">
-                    <h3>Estorno de Kit (Retorno ao Estoque)</h3>
-                    <p style="font-size:12px; color:gray; margin-bottom: 15px;">Busque o código do kit para recuperá-lo dos registros de saída.</p>
-                    <button class="btn-principal" style="background:#444; margin-bottom:15px" onclick="app.scan('estorno-cod', 's-estorno')">📷 Escanear Código</button>
-                    <div id="s-estorno" class="scanner-view"></div>
-                    <label>Código do Kit</label>
-                    <input type="text" id="estorno-cod">
-                    <button class="btn-principal" style="background:var(--verde)" onclick="app.executarEstorno()">REINTEGRAR AO ESTOQUE</button>
+                    <label>Código do Produto</label><input type="text" id="sai-cod">
+                    <button class="btn-principal" style="background:var(--vermelho); margin-top:10px" onclick="app.dbRemover()">DAR BAIXA</button>
                 </div>
             </div>
 
@@ -262,7 +234,10 @@
                     this.user = Object.values(this.dados.usuarios).find(x => x.login === u && x.pass === p);
                 }
                 if(this.user) {
-                    if(this.user.ativo === false) { alert("Aguarde aprovação."); return; }
+                    if(this.user.ativo === false) {
+                        alert("Sua conta aguarda aprovação do Administrador.");
+                        return;
+                    }
                     document.getElementById('section-auth').classList.add('hidden');
                     document.getElementById('layout-sistema').style.display = 'block';
                     document.getElementById('user-info').innerText = this.user.nome;
@@ -280,19 +255,44 @@
                 if(n.length < 3 || p.length < 4) return alert("Dados insuficientes.");
                 const login = n.split(' ')[0].toLowerCase() + Math.floor(Math.random()*100);
                 db.ref('usuarios').push({ nome: n, login: login, pass: p, role: 'user', ativo: false });
-                alert(`Solicitação enviada! Login: ${login}`);
+                alert(`Solicitação enviada! Login: ${login}\nPeça ao Master para liberar seu acesso.`);
                 this.toggleAuth();
             },
 
-            validaPaciente() {
-                const mot = document.getElementById('sai-motivo').value;
-                const field = document.getElementById('sai-paciente');
-                const label = document.getElementById('label-paciente');
-                if(mot === "Consumo") {
-                    field.style.display = "block"; label.style.display = "block";
-                } else {
-                    field.style.display = "none"; label.style.display = "none"; field.value = "";
+            liberarUser(key, status) {
+                const msg = status ? "Ativar este usuário?" : "Bloquear este usuário?";
+                if(confirm(msg)) db.ref('usuarios/' + key).update({ ativo: status });
+            },
+
+            editPass(key) {
+                const p = prompt("Digite a nova senha (mínimo 4 dígitos):");
+                if(p && p.length >= 4) {
+                    db.ref('usuarios/' + key).update({ pass: p });
+                    alert("Senha alterada!");
                 }
+            },
+
+            editRole(key, current) {
+                const next = current === 'admin' ? 'user' : 'admin';
+                if(confirm(`Alterar cargo para ${next.toUpperCase()}?`)) {
+                    db.ref('usuarios/' + key).update({ role: next });
+                }
+            },
+
+            renderAdmin() {
+                const container = document.getElementById('lista-users'); if(!container) return;
+                container.innerHTML = Object.entries(this.dados.usuarios).map(([key, u]) => `
+                    <div class="log-row ${u.ativo === false ? 'pendente' : ''}">
+                        <span>
+                            <b>${u.nome}</b> [${u.role.toUpperCase()}]<br>
+                            <small>Login: ${u.login} | Senha: <b>${u.pass}</b> | Status: ${u.ativo ? 'Ativo' : 'BLOQUEADO'}</small>
+                        </span>
+                        <div>
+                            ${u.ativo === false ? `<button class="btn-adm" style="background:var(--verde); color:white" onclick="app.liberarUser('${key}', true)">✅</button>` : `<button class="btn-adm" onclick="app.liberarUser('${key}', false)">🚫</button>`}
+                            <button class="btn-adm" onclick="app.editPass('${key}')">🔑</button>
+                            <button class="btn-adm" onclick="app.editRole('${key}', '${u.role}')">🛡️</button>
+                        </div>
+                    </div>`).join('');
             },
 
             dbSalvar() {
@@ -304,71 +304,29 @@
                 db.ref('materiais/' + cod).set({ cod, nome, prot, venc });
                 db.ref('logs').push({ data: new Date().toLocaleString('pt-BR'), user: this.user.nome, acao: 'ENTRADA', desc: nome, meta: { cod, prot, venc } });
                 ['ent-cod','ent-nome','ent-venc'].forEach(id => document.getElementById(id).value = "");
+                document.getElementById('ent-prot').value = "";
                 alert("Entrada Registrada!");
             },
 
             dbRemover() {
                 const cod = document.getElementById('sai-cod').value.trim();
-                const motivo = document.getElementById('sai-motivo').value;
-                const paciente = document.getElementById('sai-paciente').value.trim();
                 const item = this.dados.materiais[cod];
-
-                if(!item) return alert("Kit não encontrado no estoque.");
-                if(motivo === "Consumo" && !paciente) return alert("Código do Paciente é obrigatório.");
-
-                if(confirm(`Confirmar baixa de: ${item.nome}?`)) {
+                if(item && confirm(`Baixa em: ${item.nome}?`)) {
                     db.ref('materiais/' + cod).remove();
-                    db.ref('logs').push({
-                        data: new Date().toLocaleString('pt-BR'),
-                        user: this.user.nome,
-                        acao: 'SAÍDA',
-                        desc: item.nome,
-                        motivo: motivo,
-                        paciente: paciente || "N/A",
-                        meta: { cod, prot: item.prot, venc: item.venc }
-                    });
+                    db.ref('logs').push({ data: new Date().toLocaleString('pt-BR'), user: this.user.nome, acao: 'SAÍDA', desc: item.nome, meta: { cod, prot: item.prot, venc: item.venc } });
                     document.getElementById('sai-cod').value = "";
-                    document.getElementById('sai-paciente').value = "";
-                }
-            },
-
-            executarEstorno() {
-                const cod = document.getElementById('estorno-cod').value.trim();
-                if(this.dados.materiais[cod]) return alert("Este item já está no estoque.");
-
-                const lastLog = Object.values(this.dados.logs).reverse()
-                    .find(l => l.acao === 'SAÍDA' && l.meta && l.meta.cod === cod);
-
-                if(!lastLog) return alert("Não foi encontrado histórico de saída para este código.");
-
-                if(confirm(`Restaurar Kit: ${lastLog.desc}\nProtocolo: ${lastLog.meta.prot}?`)) {
-                    db.ref('materiais/' + cod).set({
-                        cod: cod,
-                        nome: lastLog.desc,
-                        prot: lastLog.meta.prot,
-                        venc: lastLog.meta.venc
-                    });
-                    db.ref('logs').push({
-                        data: new Date().toLocaleString('pt-BR'),
-                        user: this.user.nome,
-                        acao: 'ESTORNO',
-                        desc: lastLog.desc,
-                        meta: lastLog.meta
-                    });
-                    document.getElementById('estorno-cod').value = "";
-                    alert("Estorno realizado com sucesso!");
-                }
+                } else { alert("Não encontrado."); }
             },
 
             renderMov() {
                 const container = document.getElementById('lista-movimentacao');
                 const busca = document.getElementById('busca-mov').value.toLowerCase();
                 if(!container) return;
-                const logs = Object.values(this.dados.logs).reverse().filter(l => (l.desc.toLowerCase().includes(busca) || (l.meta && l.meta.prot.toLowerCase().includes(busca))));
+                const logs = Object.values(this.dados.logs).reverse().filter(l => (l.acao === 'ENTRADA' || l.acao === 'SAÍDA') && (l.desc.toLowerCase().includes(busca) || (l.meta && l.meta.prot.toLowerCase().includes(busca))));
+                
                 container.innerHTML = logs.map(l => {
                     const m = l.meta || {};
-                    let cor = l.acao === 'ENTRADA' ? 'bg-entrada' : (l.acao === 'ESTORNO' ? 'bg-estorno' : 'bg-saida');
-                    return `<div class="log-row"><span><span class="badge-mov ${cor}">${l.acao}</span> <b>${l.desc}</b><span class="info-detalhada">Prot: ${m.prot || '-'} | Val: ${m.venc ? m.venc.split('-').reverse().join('/') : '-'} ${l.motivo ? '| Motivo: '+l.motivo : ''} ${l.paciente && l.paciente !== 'N/A' ? '| Pac: '+l.paciente : ''}<br>Responsável: ${l.user}</span></span><small style="color:#999">${l.data}</small></div>`;
+                    return `<div class="log-row"><span><span class="badge-mov ${l.acao === 'ENTRADA' ? 'bg-entrada' : 'bg-saida'}">${l.acao}</span> <b>${l.desc}</b><span class="info-detalhada">Cód: ${m.cod || '-'} | Prot: ${m.prot || '-'} | Val: ${m.venc ? m.venc.split('-').reverse().join('/') : '-'} <br>Responsável: ${l.user}</span></span><small style="color:#999">${l.data}</small></div>`;
                 }).join('');
             },
 
@@ -401,42 +359,25 @@
                 document.getElementById('nav-'+v).classList.add('active');
             },
 
-            renderAdmin() {
-                const container = document.getElementById('lista-users'); if(!container) return;
-                container.innerHTML = Object.entries(this.dados.usuarios).map(([key, u]) => `
-                    <div class="log-row ${u.ativo === false ? 'pendente' : ''}">
-                        <span><b>${u.nome}</b><br><small>Login: ${u.login} | Role: ${u.role}</small></span>
-                        <div>
-                            ${u.ativo === false ? `<button class="btn-adm" onclick="app.liberarUser('${key}', true)">✅</button>` : `<button class="btn-adm" onclick="app.liberarUser('${key}', false)">🚫</button>`}
-                        </div>
-                    </div>`).join('');
+            renderLogs() {
+                const container = document.getElementById('lista-logs'); if(!container) return;
+                container.innerHTML = Object.values(this.dados.logs).reverse().slice(0,50).map(l => `<div class="log-row"><span><b>[${l.data}]</b> ${l.user}: ${l.acao}</span></div>`).join('');
             },
 
-            liberarUser(key, status) { db.ref('usuarios/' + key).update({ ativo: status }); },
-
             exportarExcel() {
-                const logs = Object.values(this.dados.logs).map(l => ({
-                    Data: l.data, Usuario: l.user, Acao: l.acao, Item: l.desc, 
-                    Codigo: l.meta?.cod, Protocolo: l.meta?.prot, Validade: l.meta?.venc,
-                    Motivo: l.motivo || "", Paciente: l.paciente || ""
-                }));
-                const ws = XLSX.utils.json_to_sheet(logs);
-                const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Relatório");
-                XLSX.writeFile(wb, "Relatorio_Iepeges_v33.xlsx");
+                const ws = XLSX.utils.json_to_sheet(Object.values(this.dados.logs));
+                const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Log");
+                XLSX.writeFile(wb, "Relatorio_v32.xlsx");
             },
 
             scan(inputId, divId) {
                 const div = document.getElementById(divId); div.style.display = 'block';
-                Quagga.init({ inputStream: { name: "Live", type: "LiveStream", target: div }, decoder: { readers: ["code_128_reader", "ean_reader"] } }, (err) => { if(!err) Quagga.start(); });
+                Quagga.init({ inputStream: { name: "Live", type: "LiveStream", target: div }, decoder: { readers: ["ean_reader", "code_128_reader"] } }, (err) => { if(!err) Quagga.start(); });
                 Quagga.onDetected((r) => { document.getElementById(inputId).value = r.codeResult.code; Quagga.stop(); div.style.display = 'none'; });
             },
 
             toggleAuth() { document.getElementById('card-login').classList.toggle('hidden'); document.getElementById('card-cad').classList.toggle('hidden'); },
-            globalEnter(e) { if(e.key === "Enter") this.login(); },
-            renderLogs() {
-                const container = document.getElementById('lista-logs'); if(!container) return;
-                container.innerHTML = Object.values(this.dados.logs).reverse().slice(0,50).map(l => `<div class="log-row"><span><b>[${l.data}]</b> ${l.user}: ${l.acao}</span></div>`).join('');
-            }
+            globalEnter(e) { if(e.key === "Enter") this.login(); }
         };
         app.init();
     </script>
