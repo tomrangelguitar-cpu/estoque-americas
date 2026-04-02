@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CONTROLE DE ESTOQUE | Versão 1.1</title>
+    <title>CONTROLE DE ESTOQUE | 1.1</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -56,21 +56,21 @@
         
         .btn-edit { background: none; border: none; cursor: pointer; font-size: 18px; color: var(--roxo); }
         input, select, textarea { width: 100%; padding: 12px; border: 1px solid var(--cinza-borda); border-radius: 8px; margin-bottom: 10px; font-size: 16px; background: white; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 14px; }
         
         .btn-principal { background: var(--roxo); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; font-size: 16px; transition: 0.3s; }
         .btn-principal:disabled { background: #ccc !important; cursor: not-allowed !important; opacity: 0.6; }
 
         /* --- MOVIMENTAÇÃO E LOGS --- */
-        .log-row { padding: 15px; border-bottom: 1px solid #eee; display: flex; flex-direction: column; gap: 5px; font-size: 13px; }
+        .log-row { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
         .log-row.pendente { background: #fff9db; border-left: 5px solid var(--alerta-laranja); }
-        .badge-mov { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; color: white; display: inline-block; margin-right: 5px; }
+        .badge-mov { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; color: white; }
         .bg-entrada { background: var(--verde); }
         .bg-saida { background: var(--vermelho); }
         .bg-estorno { background: var(--alerta-laranja); }
-        .info-detalhada { font-size: 11px; color: #666; line-height: 1.4; }
-        
-        .btn-adm-log { background: none; border: 1px solid #ddd; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; color: #555; transition: 0.2s; }
-        .btn-adm-log:hover { background: #f0f0f0; border-color: #bbb; }
+        .info-detalhada { font-size: 11px; color: #666; margin-top: 4px; display: block; line-height: 1.4; }
+        .btn-adm { background: #eee; border: 1px solid #ccc; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 14px; transition: 0.2s; }
+        .btn-adm:hover { background: #ddd; }
 
         .alert-item { padding: 12px; margin-bottom: 8px; border-radius: 8px; font-size: 13px; border-left: 5px solid; }
         .bg-quarentena { background: #fee2e2; border-color: var(--vermelho); color: #991b1b; }
@@ -152,7 +152,7 @@
 
             <div id="v-est" class="view hidden">
                 <div class="card">
-                    <h3>Estoque Atual</h3>
+                    <h3>Kits Disponíveis em Estoque</h3>
                     <div style="display:flex; gap:10px; margin-bottom:15px">
                         <select id="filtro-coluna" style="flex:1" onchange="app.renderEstoque()">
                             <option value="nome">Nome do Kit</option>
@@ -164,7 +164,7 @@
                     </div>
                     <table>
                         <thead>
-                            <tr><th>Código</th><th>Nome</th><th>Protocolo</th><th>Local</th><th>Venc.</th><th>Ações</th></tr>
+                            <tr><th>Código</th><th>Nome</th><th>Protocolo</th><th>Local</th><th>Vencimento</th><th>Ações</th></tr>
                         </thead>
                         <tbody id="lista-est"></tbody>
                     </table>
@@ -174,7 +174,7 @@
             <div id="v-mov" class="view hidden">
                 <div class="card">
                     <h3>Movimentação Completa</h3>
-                    <button class="btn-excel" onclick="app.exportarExcel()" style="background:#1d6f42; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer; margin-bottom:15px; font-weight:bold;">📗 Exportar Relatório</button>
+                    <button class="btn-principal" onclick="app.exportarExcel()" style="background:#1d6f42; margin-bottom:15px; width:auto; padding:8px 15px">📗 Exportar Relatório</button>
                     <input type="text" id="busca-mov" placeholder="Buscar por Kit ou Protocolo..." onkeyup="app.renderMov()">
                     <div id="lista-movimentacao"></div>
                 </div>
@@ -215,8 +215,7 @@
                         <option value="">Selecione...</option>
                         <option value="Consumo">Consumo</option><option value="Quarentena">Quarentena</option><option value="Destruição">Destruição</option><option value="Devolução">Devolução</option>
                     </select>
-                    <label>Código Paciente (Obrigatório para Consumo)</label>
-                    <input type="text" id="sai-paciente" onkeyup="app.validarSaida()">
+                    <label>Código Paciente</label><input type="text" id="sai-paciente" onkeyup="app.validarSaida()">
                     <button id="btn-confirmar-baixa" class="btn-principal" style="background:var(--vermelho); margin-top:10px" onclick="app.dbRemover()">DAR BAIXA</button>
                 </div>
             </div>
@@ -226,19 +225,16 @@
                     <h3>Estorno</h3>
                     <button class="btn-principal" style="background:#444; margin-bottom:15px" onclick="app.scan('est-cod', 's-estorno', true)">📷 Escanear para Estorno</button>
                     <div id="s-estorno" class="scanner-view"></div>
-                    <label>Código</label><input type="text" id="est-cod" placeholder="Digite ou escaneie..." onkeyup="app.buscarEstorno(this.value)">
-                    <div id="dados-estorno" class="hidden" style="margin-top:20px; border-top: 1px dashed #ccc; padding-top:20px">
-                        <label>Nome</label><input type="text" id="est-nome" readonly style="background:#f9f9f9">
-                        <label>Protocolo</label><input type="text" id="est-prot" readonly style="background:#f9f9f9">
-                        <label>Validade</label><input type="text" id="est-venc" readonly style="background:#f9f9f9">
-                        <label>Motivo do Estorno (Obrigatório)</label>
-                        <textarea id="est-motivo" placeholder="Por que o item está voltando?"></textarea>
-                        <button class="btn-principal" style="background:var(--verde)" onclick="app.dbEstornar()">CONFIRMAR ESTORNO</button>
+                    <label>Código</label><input type="text" id="est-cod" onkeyup="app.buscarEstorno(this.value)">
+                    <div id="dados-estorno" class="hidden">
+                        <label>Nome</label><input type="text" id="est-nome" readonly style="background:#eee">
+                        <label>Motivo do Estorno</label><textarea id="est-motivo"></textarea>
+                        <button class="btn-principal" style="background:var(--verde)" onclick="app.dbEstornar()">ESTORNAR</button>
                     </div>
                 </div>
             </div>
 
-            <div id="v-adm" class="view hidden"><div class="card"><h3>Gestão de Usuários</h3><div id="lista-users"></div></div></div>
+            <div id="v-adm" class="view hidden"><div class="card"><h3>Gestão de Colaboradores</h3><div id="lista-users"></div></div></div>
             <div id="v-rel" class="view hidden"><div class="card"><h3>Logs Brutos</h3><div id="lista-logs"></div></div></div>
         </main>
         <footer>Desenvolvido por <b>Milton Rangel</b> - Versão 1.1</footer>
@@ -269,9 +265,9 @@
                     this.dados.logs = val.logs || {};
                     this.dados.usuarios = val.usuarios || {};
                     this.renderEstoque();
+                    this.renderLogs();
                     this.renderMov();
                     this.renderAdmin();
-                    this.renderLogs();
                     this.checkVencimento();
                 });
             },
@@ -293,7 +289,7 @@
                         document.getElementById('nav-rel').classList.remove('hidden');
                     }
                     this.nav('dash');
-                } else { alert("Acesso Negado."); }
+                } else { alert("Acesso negado."); }
             },
 
             cadastrar() {
@@ -302,23 +298,29 @@
                 if(n.length < 3 || p.length < 4) return alert("Dados insuficientes.");
                 const login = n.split(' ')[0].toLowerCase() + Math.floor(Math.random()*100);
                 db.ref('usuarios').push({ nome: n, login: login, pass: p, role: 'user', ativo: false });
-                alert(`Solicitação enviada! Seu login sugerido é: ${login}`);
+                alert(`Solicitação enviada! Login: ${login}`);
                 this.toggleAuth();
             },
 
-            // --- ESTOQUE E ENTRADA ---
+            // --- ESTOQUE ---
+            renderEstoque() {
+                const col = document.getElementById('filtro-coluna').value;
+                const busca = document.getElementById('busca').value.toLowerCase();
+                const corpo = document.getElementById('lista-est');
+                corpo.innerHTML = Object.values(this.dados.materiais).filter(m => (m[col] || "").toLowerCase().includes(busca)).map(m => `
+                    <tr><td>${m.cod}</td><td style="text-align:left"><b>${m.nome}</b></td><td>${m.prot || '-'}</td><td>${m.local || '-'}</td><td>${m.venc ? m.venc.split('-').reverse().join('/') : '-'}</td><td><button class="btn-edit" onclick="app.prepararEdicao('${m.cod}')">✏️</button></td></tr>`).join('');
+            },
+
             prepararEdicao(cod) {
                 const item = this.dados.materiais[cod];
                 if(!item) return;
-                this.isEditing = true;
-                this.nav('ent');
+                this.isEditing = true; this.nav('ent');
                 document.getElementById('titulo-entrada').innerText = "Editar Kit";
                 document.getElementById('aviso-edicao').classList.remove('hidden');
                 document.getElementById('btn-salvar-ent').innerText = "SALVAR ALTERAÇÕES";
                 document.getElementById('btn-cancelar-edit').classList.remove('hidden');
                 document.getElementById('btn-scan-ent').classList.add('hidden');
-                const ic = document.getElementById('ent-cod');
-                ic.value = item.cod; ic.readOnly = true; ic.style.background = "#eee";
+                const ic = document.getElementById('ent-cod'); ic.value = item.cod; ic.readOnly = true; ic.style.background = "#eee";
                 document.getElementById('ent-nome').value = item.nome;
                 document.getElementById('ent-prot').value = item.prot || "";
                 document.getElementById('ent-local').value = item.local || "";
@@ -332,8 +334,7 @@
                 document.getElementById('btn-salvar-ent').innerText = "CONFIRMAR ENTRADA";
                 document.getElementById('btn-cancelar-edit').classList.add('hidden');
                 document.getElementById('btn-scan-ent').classList.remove('hidden');
-                const ic = document.getElementById('ent-cod');
-                ic.readOnly = false; ic.style.background = "white";
+                const ic = document.getElementById('ent-cod'); ic.readOnly = false; ic.style.background = "white";
                 ['ent-cod','ent-nome','ent-venc','ent-prot','ent-local'].forEach(id => document.getElementById(id).value = "");
             },
 
@@ -344,69 +345,51 @@
                 const local = document.getElementById('ent-local').value;
                 const venc = document.getElementById('ent-venc').value;
                 if(!cod || !nome) return alert("Preencha Código e Nome.");
-                const acao = this.isEditing ? 'EDIÇÃO' : 'ENTRADA';
                 db.ref('materiais/' + cod).set({ cod, nome, prot, venc, local });
-                db.ref('logs').push({ data: new Date().toLocaleString('pt-BR'), user: this.user.nome, acao, desc: nome, meta: { cod, prot, venc, local } });
-                alert("Salvo!"); this.limparFormEntrada();
+                db.ref('logs').push({ data: new Date().toLocaleString('pt-BR'), user: this.user.nome, acao: this.isEditing ? 'EDIÇÃO' : 'ENTRADA', desc: nome, meta: { cod, prot, venc, local } });
+                alert("Sucesso!"); this.limparFormEntrada();
             },
 
-            renderEstoque() {
-                const col = document.getElementById('filtro-coluna').value;
-                const busca = document.getElementById('busca').value.toLowerCase();
-                const corpo = document.getElementById('lista-est');
-                corpo.innerHTML = Object.values(this.dados.materiais).filter(m => (m[col] || "").toLowerCase().includes(busca)).map(m => `
-                    <tr>
-                        <td>${m.cod}</td>
-                        <td style="text-align:left"><b>${m.nome}</b></td>
-                        <td>${m.prot || '-'}</td>
-                        <td>${m.local || '-'}</td>
-                        <td>${m.venc ? m.venc.split('-').reverse().join('/') : '-'}</td>
-                        <td><button class="btn-edit" onclick="app.prepararEdicao('${m.cod}')">✏️</button></td>
-                    </tr>`).join('');
-            },
-
-            // --- MOVIMENTAÇÃO (V1.1 COM EDIÇÃO/EXCLUSÃO ADMIN) ---
+            // --- MOVIMENTAÇÃO (COM BOTÕES ADMIN) ---
             renderMov() {
                 const container = document.getElementById('lista-movimentacao');
                 const busca = document.getElementById('busca-mov').value.toLowerCase();
-                const logsArr = Object.entries(this.dados.logs).reverse();
+                const logsEntries = Object.entries(this.dados.logs).reverse();
                 
-                container.innerHTML = logsArr.filter(([k, l]) => l.desc.toLowerCase().includes(busca)).map(([key, l]) => {
+                container.innerHTML = logsEntries.filter(([k, l]) => l.desc.toLowerCase().includes(busca)).map(([key, l]) => {
                     const m = l.meta || {};
-                    let cor = 'bg-entrada'; if(l.acao === 'SAÍDA') cor = 'bg-saida'; if(l.acao==='ESTORNO'||l.acao==='EDIÇÃO') cor = 'bg-estorno';
+                    let cor = 'bg-entrada'; if(l.acao === 'SAÍDA') cor = 'bg-saida'; if(l.acao === 'ESTORNO' || l.acao === 'EDIÇÃO') cor = 'bg-estorno';
                     let extra = "";
                     if(l.acao === 'SAÍDA' && m.pac) extra = `<br><b>Paciente:</b> ${m.pac} | <b>Motivo:</b> ${m.mot}`;
                     if(l.acao === 'ESTORNO' && m.mot_estorno) extra = `<br><b style="color:var(--vermelho)">Motivo Estorno:</b> ${m.mot_estorno}`;
 
-                    const botoesAdmin = (this.user && this.user.role === 'admin') ? `
-                        <div style="margin-top:8px; display:flex; gap:10px">
-                            <button class="btn-adm-log" onclick="app.editarLog('${key}')">✏️ Editar Registro</button>
-                            <button class="btn-adm-log" onclick="app.excluirLog('${key}')" style="color:var(--vermelho)">🗑️ Excluir Registro</button>
+                    const botoesLog = (this.user && this.user.role === 'admin') ? `
+                        <div style="margin-top:10px; display:flex; gap:10px">
+                            <button onclick="app.editarLog('${key}')" style="background:none; border:none; cursor:pointer; font-size:11px; color:var(--roxo); text-decoration:underline">Editar Registro</button>
+                            <button onclick="app.excluirLog('${key}')" style="background:none; border:none; cursor:pointer; font-size:11px; color:var(--vermelho); text-decoration:underline">Excluir Registro</button>
                         </div>` : "";
 
-                    return `
-                    <div class="log-row">
-                        <div style="display:flex; justify-content:space-between">
+                    return `<div class="log-row" style="flex-direction:column; align-items:flex-start">
+                        <div style="display:flex; justify-content:space-between; width:100%">
                             <span><span class="badge-mov ${cor}">${l.acao}</span> <b>${l.desc}</b></span>
                             <small>${l.data}</small>
                         </div>
                         <span class="info-detalhada">Cód: ${m.cod || '-'} | Prot: ${m.prot || '-'}${extra}<br>Resp: ${l.user}</span>
-                        ${botoesAdmin}
+                        ${botoesLog}
                     </div>`;
                 }).join('');
             },
 
             editarLog(key) {
-                const log = this.dados.logs[key];
-                const n = prompt("Editar descrição deste registro:", log.desc);
+                const n = prompt("Nova descrição para este registro:", this.dados.logs[key].desc);
                 if(n) db.ref('logs/' + key).update({ desc: n });
             },
 
             excluirLog(key) {
-                if(confirm("Deseja apagar este registro do histórico permanentemente?")) db.ref('logs/' + key).remove();
+                if(confirm("Excluir este registro permanentemente do histórico?")) db.ref('logs/' + key).remove();
             },
 
-            // --- SAÍDA ---
+            // --- SAÍDA / ESTORNO ---
             validarSaida() {
                 const mot = document.getElementById('sai-motivo').value;
                 const pac = document.getElementById('sai-paciente').value.trim();
@@ -418,20 +401,17 @@
                 const mot = document.getElementById('sai-motivo').value;
                 const pac = document.getElementById('sai-paciente').value.trim();
                 const item = this.dados.materiais[cod];
-                if(!item || !mot) return alert("Erro nos dados.");
+                if(!item || !mot) return alert("Dados inválidos.");
                 db.ref('materiais/' + cod).remove();
                 db.ref('logs').push({ data: new Date().toLocaleString('pt-BR'), user: this.user.nome, acao: 'SAÍDA', desc: item.nome, meta: { cod, prot: item.prot, venc: item.venc, mot, pac } });
-                document.getElementById('sai-cod').value = ""; document.getElementById('sai-paciente').value = ""; alert("Baixa realizada.");
+                document.getElementById('sai-cod').value = ""; alert("Baixa ok.");
             },
 
-            // --- ESTORNO ---
             buscarEstorno(cod) {
                 const log = Object.values(this.dados.logs).reverse().find(l => l.acao === 'SAÍDA' && l.meta.cod === cod);
                 if(log) {
                     document.getElementById('dados-estorno').classList.remove('hidden');
                     document.getElementById('est-nome').value = log.desc;
-                    document.getElementById('est-prot').value = log.meta.prot || "-";
-                    document.getElementById('est-venc').value = log.meta.venc || "-";
                 } else { document.getElementById('dados-estorno').classList.add('hidden'); }
             },
 
@@ -439,68 +419,56 @@
                 const cod = document.getElementById('est-cod').value.trim();
                 const mot = document.getElementById('est-motivo').value.trim();
                 if(!mot) return alert("Motivo obrigatório.");
-                const n = document.getElementById('est-nome').value;
-                const p = document.getElementById('est-prot').value;
-                const v = document.getElementById('est-venc').value;
-                db.ref('materiais/' + cod).set({ cod, nome: n, prot: p, venc: v, local: "ESTORNO" });
-                db.ref('logs').push({ data: new Date().toLocaleString('pt-BR'), user: this.user.nome, acao: 'ESTORNO', desc: n, meta: { cod, prot: p, venc: v, mot_estorno: mot } });
-                alert("Estornado!"); document.getElementById('est-cod').value = ""; document.getElementById('dados-estorno').classList.add('hidden');
+                const log = Object.values(this.dados.logs).reverse().find(l => l.acao === 'SAÍDA' && l.meta.cod === cod);
+                db.ref('materiais/' + cod).set({ cod, nome: log.desc, prot: log.meta.prot, venc: log.meta.venc, local: "ESTORNO" });
+                db.ref('logs').push({ data: new Date().toLocaleString('pt-BR'), user: this.user.nome, acao: 'ESTORNO', desc: log.desc, meta: { cod, mot_estorno: mot } });
+                alert("Estornado!"); document.getElementById('dados-estorno').classList.add('hidden');
             },
 
-            // --- ADMINISTRAÇÃO ---
+            // --- GESTÃO DE USUÁRIOS (RESTAURADA 100%) ---
             renderAdmin() {
                 const container = document.getElementById('lista-users');
                 if(!container) return;
                 container.innerHTML = Object.entries(this.dados.usuarios).map(([key, u]) => `
                     <div class="log-row ${u.ativo === false ? 'pendente' : ''}">
-                        <div style="display:flex; justify-content:space-between; align-items:center">
-                            <span><b>${u.nome}</b> (${u.login}) - <b>${u.role.toUpperCase()}</b><br><small>Senha: ${u.pass}</small></span>
-                            <div style="display:flex; gap:5px">
-                                <button class="btn-adm-log" onclick="app.liberarUser('${key}', ${!u.ativo})">${u.ativo ? 'Bloquear' : 'Aprovar'}</button>
-                                <button class="btn-adm-log" onclick="app.mudarCargo('${key}', '${u.role}')">Cargo</button>
-                            </div>
+                        <span><b>${u.nome}</b> [${u.role.toUpperCase()}]<br><small>Login: ${u.login} | Senha: <b>${u.pass}</b> | Status: ${u.ativo ? 'Ativo' : 'Bloqueado'}</small></span>
+                        <div style="display:flex; gap:5px">
+                            ${u.ativo === false ? `<button class="btn-adm" style="background:var(--verde);color:white" onclick="app.liberarUser('${key}', true)">✅ Aprovar</button>` : `<button class="btn-adm" onclick="app.liberarUser('${key}', false)">🚫 Bloquear</button>`}
+                            <button class="btn-adm" onclick="app.editPass('${key}')">🔑 Senha</button>
+                            <button class="btn-adm" onclick="app.editRole('${key}', '${u.role}')">🛡️ Cargo</button>
                         </div>
                     </div>`).join('');
             },
 
-            liberarUser(key, s) { db.ref('usuarios/'+key).update({ativo: s}); },
-            mudarCargo(key, r) { db.ref('usuarios/'+key).update({role: r === 'admin' ? 'user' : 'admin'}); },
-            
-            renderLogs() {
-                const c = document.getElementById('lista-logs'); if(!c) return;
-                c.innerHTML = Object.values(this.dados.logs).reverse().slice(0,30).map(l => `<div>[${l.data}] ${l.user}: ${l.acao} - ${l.desc}</div>`).join('');
-            },
+            liberarUser(key, s) { if(confirm("Confirmar alteração de status?")) db.ref('usuarios/'+key).update({ativo: s}); },
+            editPass(key) { const p = prompt("Nova senha:"); if(p) db.ref('usuarios/'+key).update({pass: p}); },
+            editRole(key, cur) { const n = cur === 'admin' ? 'user' : 'admin'; if(confirm("Mudar cargo?")) db.ref('usuarios/'+key).update({role: n}); },
 
+            // --- UTILITÁRIOS ---
+            renderLogs() {
+                const container = document.getElementById('lista-logs'); if(!container) return;
+                container.innerHTML = Object.values(this.dados.logs).reverse().slice(0,30).map(l => `<div class="log-row"><span><b>[${l.data}]</b> ${l.user}: ${l.acao} - ${l.desc}</span></div>`).join('');
+            },
             exportarExcel() {
                 const ws = XLSX.utils.json_to_sheet(Object.values(this.dados.logs));
-                const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Logs");
-                XLSX.writeFile(wb, "Relatorio_Estoque_v1.1.xlsx");
+                const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Log");
+                XLSX.writeFile(wb, "Relatorio_v1.1.xlsx");
             },
-
             scan(inputId, divId, isEstorno = false) {
                 const div = document.getElementById(divId); div.style.display = 'block';
                 Quagga.init({ inputStream: { target: div, constraints: { facingMode: "environment" } }, decoder: { readers: ["code_128_reader"] } }, (err) => { if(!err) Quagga.start(); });
-                Quagga.onDetected((r) => { 
-                    document.getElementById(inputId).value = r.codeResult.code; 
-                    if(isEstorno) this.buscarEstorno(r.codeResult.code);
-                    Quagga.stop(); div.style.display = 'none'; 
-                });
+                Quagga.onDetected((r) => { document.getElementById(inputId).value = r.codeResult.code; if(isEstorno) this.buscarEstorno(r.codeResult.code); Quagga.stop(); div.style.display = 'none'; });
             },
-
             checkVencimento() {
-                const q = document.getElementById('lista-quarentena');
-                const v = document.getElementById('lista-vencendo');
-                q.innerHTML = ""; v.innerHTML = "";
-                const hoje = new Date(); hoje.setHours(0,0,0,0);
+                const q = document.getElementById('lista-quarentena'); const v = document.getElementById('lista-vencendo');
+                q.innerHTML = ""; v.innerHTML = ""; const hoje = new Date(); hoje.setHours(0,0,0,0);
                 Object.values(this.dados.materiais).forEach(m => {
-                    if(!m.venc) return;
-                    const diff = Math.ceil((new Date(m.venc) - hoje) / (1000*60*60*24));
+                    if(!m.venc) return; const diff = Math.ceil((new Date(m.venc) - hoje) / (1000*60*60*24));
                     if(diff < 0) q.innerHTML += `<div class="alert-item bg-quarentena">${m.nome} (Vencido)</div>`;
                     else if(diff <= 45) v.innerHTML += `<div class="alert-item bg-vencendo">${m.nome} (${diff} dias)</div>`;
                 });
                 document.getElementById('count-itens').innerText = Object.keys(this.dados.materiais).length;
             },
-
             nav(v) {
                 document.querySelectorAll('.view').forEach(x => x.classList.add('hidden'));
                 document.querySelectorAll('.nav-btn').forEach(x => x.classList.remove('active'));
