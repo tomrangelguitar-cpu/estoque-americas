@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CONTROLE DE ESTOQUE | 1.1</title>
+    <title>CONTROLE DE ESTOQUE | v1.0</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -55,20 +55,26 @@
         td { padding: 10px; border: 1px solid #eee; font-size: 14px; text-align: center; }
         
         .btn-edit { background: none; border: none; cursor: pointer; font-size: 18px; color: var(--roxo); }
+        .btn-edit:hover { transform: scale(1.2); }
+
         input, select, textarea { width: 100%; padding: 12px; border: 1px solid var(--cinza-borda); border-radius: 8px; margin-bottom: 10px; font-size: 16px; background: white; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 14px; }
         
         .btn-principal { background: var(--roxo); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; font-size: 16px; transition: 0.3s; }
+        .btn-principal:disabled { background: #ccc !important; cursor: not-allowed !important; opacity: 0.6; }
+        
+        .btn-excel { background: #1d6f42; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; margin-bottom: 15px; font-weight: bold; }
 
-        /* --- MOVIMENTAÇÃO --- */
-        .log-row { padding: 15px; border-bottom: 1px solid #eee; display: flex; flex-direction: column; gap: 5px; font-size: 13px; }
+        /* --- LOGS E USUÁRIOS --- */
+        .log-row { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
         .log-row.pendente { background: #fff9db; border-left: 5px solid var(--alerta-laranja); }
-        .badge-mov { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; color: white; display: inline-block; margin-right: 5px; }
+        .badge-mov { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; color: white; }
         .bg-entrada { background: var(--verde); }
         .bg-saida { background: var(--vermelho); }
         .bg-estorno { background: var(--alerta-laranja); }
-        .info-detalhada { font-size: 11px; color: #666; line-height: 1.4; }
-        .btn-adm-acao { background: #f0f0f0; border: 1px solid #ccc; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; color: #333; margin-top: 5px; }
-        .btn-adm-acao:hover { background: #e0e0e0; }
+        .info-detalhada { font-size: 11px; color: #666; margin-top: 4px; display: block; line-height: 1.4; }
+        .btn-adm { background: #eee; border: 1px solid #ccc; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 14px; transition: 0.2s; }
+        .btn-adm:hover { background: #ddd; }
 
         .alert-item { padding: 12px; margin-bottom: 8px; border-radius: 8px; font-size: 13px; border-left: 5px solid; }
         .bg-quarentena { background: #fee2e2; border-color: var(--vermelho); color: #991b1b; }
@@ -76,6 +82,7 @@
         
         .hidden { display: none !important; }
         .scanner-view { width: 100%; height: 250px; background: #000; display: none; border-radius: 12px; margin-bottom: 15px; border: 3px solid var(--roxo); overflow: hidden; }
+        
         footer { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--escuro); color: #cbb2ff; text-align: center; padding: 10px; font-size: 12px; z-index: 1001; }
 
         @media (max-width: 768px) { .sidebar { width: 60px; } .nav-btn span { display: none; } main { margin-left: 60px; } }
@@ -111,7 +118,7 @@
         <header>
             <div style="display:flex; align-items:center; gap:10px">
                 <img src="https://www.institutoamericas.org/wp-content/uploads/2025/09/logo-instituto-americas.svg">
-                <span style="font-weight:bold">ESTOQUE v1.1</span>
+                <span style="font-weight:bold"> </span>
             </div>
             <div style="display:flex; align-items:center; gap:15px">
                 <small id="user-info" style="font-weight:600"></small>
@@ -126,6 +133,7 @@
             <button id="nav-ent" class="nav-btn" onclick="app.nav('ent')">📥 <span>Entrada</span></button>
             <button id="nav-sai" class="nav-btn" onclick="app.nav('sai')">📤 <span>Saída</span></button>
             <button id="nav-estorno" class="nav-btn" onclick="app.nav('estorno')">⏪ <span>Estorno</span></button>
+            <button id="nav-rel" class="nav-btn hidden" onclick="app.nav('rel')">📋 <span>Logs Sistema</span></button>
             <button id="nav-adm" class="nav-btn hidden" onclick="app.nav('adm')">⚙️ <span>Gestão Usuários</span></button>
         </aside>
 
@@ -149,11 +157,26 @@
 
             <div id="v-est" class="view hidden">
                 <div class="card">
-                    <h3>Estoque Atual</h3>
-                    <input type="text" id="busca" placeholder="Filtrar estoque..." onkeyup="app.renderEstoque()">
+                    <h3>Kits Disponíveis em Estoque</h3>
+                    <div style="display:flex; gap:10px; margin-bottom:15px">
+                        <select id="filtro-coluna" style="flex:1" onchange="app.renderEstoque()">
+                            <option value="nome">Nome do Kit</option>
+                            <option value="cod">Código</option>
+                            <option value="prot">Protocolo</option>
+                            <option value="local">Local</option>
+                        </select>
+                        <input type="text" id="busca" style="flex:2" placeholder="Filtrar estoque..." onkeyup="app.renderEstoque()">
+                    </div>
                     <table>
                         <thead>
-                            <tr><th>Código</th><th>Nome</th><th>Protocolo</th><th>Local</th><th>Venc.</th><th>Ações</th></tr>
+                            <tr>
+                                <th>Código</th>
+                                <th>Nome do Kit</th>
+                                <th>Protocolo</th>
+                                <th>Local</th>
+                                <th>Vencimento</th>
+                                <th>Ações</th>
+                            </tr>
                         </thead>
                         <tbody id="lista-est"></tbody>
                     </table>
@@ -162,8 +185,9 @@
 
             <div id="v-mov" class="view hidden">
                 <div class="card">
-                    <h3>Histórico de Movimentação</h3>
-                    <input type="text" id="busca-mov" placeholder="Buscar no histórico..." onkeyup="app.renderMov()">
+                    <h3>Movimentação Completa</h3>
+                    <button class="btn-excel" onclick="app.exportarExcel()">📗 Exportar Relatório</button>
+                    <input type="text" id="busca-mov" placeholder="Buscar por Kit ou Protocolo..." onkeyup="app.renderMov()">
                     <div id="lista-movimentacao"></div>
                 </div>
             </div>
@@ -171,22 +195,34 @@
             <div id="v-ent" class="view hidden">
                 <div class="card">
                     <h3 id="titulo-entrada">Entrada de Kit</h3>
+                    <p id="aviso-edicao" class="hidden" style="color:var(--alerta-laranja); font-weight:bold">⚠️ MODO EDIÇÃO ATIVADO</p>
+                    
                     <button class="btn-principal" id="btn-scan-ent" style="background:#444; margin-bottom:15px" onclick="app.scan('ent-cod', 's-ent')">📷 Escanear Código</button>
                     <div id="s-ent" class="scanner-view"></div>
-                    <label>Código</label><input type="text" id="ent-cod">
-                    <label>Nome do Kit</label><input type="text" id="ent-nome">
+                    
+                    <label>Código do Kit</label>
+                    <input type="text" id="ent-cod">
+                    
+                    <label>Nome do Kit</label>
+                    <input type="text" id="ent-nome">
+                    
                     <label>Protocolo</label>
                     <select id="ent-prot">
                         <option value="">Selecione...</option>
-                        <option value="20230246">20230246</option><option value="AMGEN20230153">AMGEN20230153</option><option value="ASCENT 7">ASCENT 7</option>
+                        <option value="20230246">20230246</option><option value="2011 (HARMONY)">2011 (HARMONY)</option><option value="AMGEN20230153">AMGEN20230153</option><option value="ARANOTE">ARANOTE</option><option value="ASCENT 7">ASCENT 7</option><option value="ATLAS">ATLAS</option><option value="BLUESTAR">BLUESTAR</option><option value="CA057-001">CA057-001</option><option value="CÂMBRIA 2">CÂMBRIA 2</option><option value="CAMELOT">CAMELOT</option><option value="CELLTRION">CELLTRION</option><option value="CLEE0011012001">CLEE0011012001</option><option value="DREAMM 7">DREAMM 7</option><option value="DS302">DS302</option><option value="ELEGANT">ELEGANT</option><option value="ESCALADE">ESCALADE</option><option value="EVOPAR">EVOPAR</option><option value="EVOPAR 2">EVOPAR 2</option><option value="EXCALIBER">EXCALIBER</option><option value="EXCALIBER MANUTENÇÃO">EXCALIBER MANUTENÇÃO</option><option value="GLOBRYTE">GLOBRYTE</option><option value="IMGN853-0421">IMGN853-0421</option><option value="IRAKLIA">IRAKLIA</option><option value="JPCF">JPCF</option><option value="JZLH">JZLH</option><option value="KER-050-D301">KER-050-D301</option><option value="LINKER">LINKER</option><option value="MAGNETISMM 32">MAGNETISMM 32</option><option value="MAGNETISMM 5">MAGNETISMM 5</option><option value="MAGNITUDE 01">MAGNITUDE 01</option><option value="MAGNITUDE 02">MAGNITUDE 02</option><option value="MAJESTEC 4">MAJESTEC 4</option><option value="MARIGOLD">MARIGOLD</option><option value="MK1084-004">MK1084-004</option><option value="MK-2870-020">MK-2870-020</option><option value="MONUMENTAL 3">MONUMENTAL 3</option><option value="MONUMENTAL 6">MONUMENTAL 6</option><option value="MOUTAINEER 03">MOUTAINEER 03</option><option value="OLYMPIA 01">OLYMPIA 01</option><option value="OLYMPIA 02">OLYMPIA 02</option><option value="OLYMPIA 03">OLYMPIA 03</option><option value="PRISM-MEL">PRISM-MEL</option><option value="REJOICE">REJOICE</option><option value="RYL-2608-102">RYL-2608-102</option><option value="SYMPHONY">SYMPHONY</option><option value="TROPIONLUNG15">TROPIONLUNG15</option><option value="VANTAGE">VANTAGE</option>
                     </select>
-                    <label>Local</label>
+                    
+                    <label>Local de Armazenamento</label>
                     <select id="ent-local">
                         <option value="">Selecione...</option>
-                        <option value="Armário 1">Armário 1</option><option value="Armário 2">Armário 2</option>
+                        <option value="Armário 1">Armário 1</option><option value="Armário 2">Armário 2</option><option value="Armário 3">Armário 3</option><option value="Armário 4">Armário 4</option><option value="Armário 5">Armário 5</option><option value="Armário 6">Armário 6</option><option value="Armário 7">Armário 7</option><option value="Armário 8">Armário 8</option><option value="Banheiro Antigo">Banheiro Antigo</option><option value="Monitoria 1">Monitoria 1</option><option value="Monitoria 2">Monitoria 2</option><option value="Sala de Reunião 1">Sala de Reunião 1</option><option value="Sala de Reunião 2">Sala de Reunião 2</option>
                     </select>
-                    <label>Vencimento</label><input type="date" id="ent-venc">
-                    <button id="btn-salvar-ent" class="btn-principal" onclick="app.dbSalvar()">CONFIRMAR</button>
+                    
+                    <label>Data de Validade</label>
+                    <input type="date" id="ent-venc">
+                    
+                    <button id="btn-salvar-ent" class="btn-principal" onclick="app.dbSalvar()">CONFIRMAR ENTRADA</button>
+                    <button id="btn-cancelar-edit" class="btn-principal hidden" style="background:#666; margin-top:10px" onclick="app.limparFormEntrada()">CANCELAR EDIÇÃO</button>
                 </div>
             </div>
 
@@ -195,31 +231,57 @@
                     <h3>Saída de Kit</h3>
                     <button class="btn-principal" style="background:#444; margin-bottom:15px" onclick="app.scan('sai-cod', 's-sai')">📷 Escanear Código</button>
                     <div id="s-sai" class="scanner-view"></div>
-                    <label>Código</label><input type="text" id="sai-cod">
-                    <label>Paciente / Justificativa</label><input type="text" id="sai-paciente">
-                    <button class="btn-principal" style="background:var(--vermelho)" onclick="app.dbRemover()">DAR BAIXA</button>
+                    
+                    <label>Código do Produto</label>
+                    <input type="text" id="sai-cod">
+                    
+                    <label>Motivo de Baixa</label>
+                    <select id="sai-motivo" onchange="app.validarSaida()">
+                        <option value="">Selecione...</option>
+                        <option value="Consumo">Consumo</option>
+                        <option value="Quarentena">Quarentena</option>
+                        <option value="Destruição">Destruição</option>
+                        <option value="Devolução">Devolução</option>
+                    </select>
+                    
+                    <label>Código do Paciente (Obrigatório para Consumo)</label>
+                    <input type="text" id="sai-paciente" placeholder="Ex: PAC123" onkeyup="app.validarSaida()">
+                    
+                    <button id="btn-confirmar-baixa" class="btn-principal" style="background:var(--vermelho); margin-top:10px" onclick="app.dbRemover()">DAR BAIXA</button>
                 </div>
             </div>
 
             <div id="v-estorno" class="view hidden">
                 <div class="card">
-                    <h3>Estorno de Kit</h3>
-                    <label>Código</label><input type="text" id="est-cod" onkeyup="app.buscarEstorno(this.value)">
-                    <div id="dados-estorno" class="hidden">
-                        <label>Motivo</label><textarea id="est-motivo"></textarea>
-                        <button class="btn-principal" style="background:var(--verde)" onclick="app.dbEstornar()">CONFIRMAR ESTORNO</button>
+                    <h3>Estorno de Material</h3>
+                    <button class="btn-principal" style="background:#444; margin-bottom:15px" onclick="app.scan('est-cod', 's-estorno', true)">📷 Escanear para Estorno</button>
+                    <div id="s-estorno" class="scanner-view"></div>
+                    
+                    <label>Código do Kit</label>
+                    <input type="text" id="est-cod" placeholder="Escaneie ou digite..." onkeyup="app.buscarEstorno(this.value)">
+                    
+                    <div id="dados-estorno" class="hidden" style="margin-top:20px; border-top: 1px dashed #ccc; padding-top:20px">
+                        <label>Nome do Kit</label><input type="text" id="est-nome" readonly style="background:#f9f9f9">
+                        <label>Protocolo</label><input type="text" id="est-prot" readonly style="background:#f9f9f9">
+                        <label>Data de Validade</label><input type="text" id="est-venc" readonly style="background:#f9f9f9">
+                        <label>Motivo do Estorno (Obrigatório)</label>
+                        <textarea id="est-motivo" placeholder="Descreva por que o item está voltando..."></textarea>
+                        <button class="btn-principal" style="background:var(--verde)" onclick="app.dbEstornar()">ESTORNAR KIT</button>
                     </div>
                 </div>
             </div>
 
+            <div id="v-rel" class="view hidden"><div class="card"><h3>Logs do Sistema</h3><div id="lista-logs"></div></div></div>
+            
             <div id="v-adm" class="view hidden">
                 <div class="card">
-                    <h3>Gestão de Usuários</h3>
+                    <h3>Gestão de Colaboradores</h3>
                     <div id="lista-users"></div>
                 </div>
             </div>
         </main>
-        <footer>Instituto Américas - v1.1</footer>
+
+        <footer>Desenvolvido por <b>Milton Rangel</b> - Versão 1.0</footer>
     </div>
 
     <script>
@@ -237,6 +299,7 @@
 
         const app = {
             user: null, 
+            isEditing: false,
             dados: { materiais: {}, logs: {}, usuarios: {} },
 
             init() {
@@ -246,6 +309,7 @@
                     this.dados.logs = val.logs || {};
                     this.dados.usuarios = val.usuarios || {};
                     this.renderEstoque();
+                    this.renderLogs();
                     this.renderMov();
                     this.renderAdmin();
                     this.checkVencimento();
@@ -256,26 +320,212 @@
                 const u = document.getElementById('login-user').value.toLowerCase().trim();
                 const p = document.getElementById('login-pass').value.trim();
                 if(u === 'iepeges' && p === 'itc@123@') {
-                    this.user = { nome: 'ADMIN', role: 'admin', ativo: true };
+                    this.user = { nome: 'MASTER', login: 'iepeges', role: 'admin', ativo: true };
                 } else {
                     this.user = Object.values(this.dados.usuarios).find(x => x.login === u && x.pass === p);
                 }
-                if(this.user && this.user.ativo) {
+                if(this.user && this.user.ativo !== false) {
                     document.getElementById('section-auth').classList.add('hidden');
                     document.getElementById('layout-sistema').style.display = 'block';
                     document.getElementById('user-info').innerText = this.user.nome;
-                    if(this.user.role === 'admin') document.getElementById('nav-adm').classList.remove('hidden');
+                    if(this.user.role === 'admin') {
+                        document.getElementById('nav-adm').classList.remove('hidden');
+                        document.getElementById('nav-rel').classList.remove('hidden');
+                    }
                     this.nav('dash');
                 } else { alert("Acesso negado."); }
             },
 
             cadastrar() {
-                const n = document.getElementById('cad-nome').value;
-                const p = document.getElementById('cad-pass').value;
-                const log = n.split(' ')[0].toLowerCase() + Math.floor(Math.random()*99);
-                db.ref('usuarios').push({ nome: n, login: log, pass: p, role: 'user', ativo: false });
-                alert("Solicitação enviada. Login: " + log);
+                const n = document.getElementById('cad-nome').value.trim();
+                const p = document.getElementById('cad-pass').value.trim();
+                if(n.length < 3 || p.length < 4) return alert("Dados insuficientes.");
+                const login = n.split(' ')[0].toLowerCase() + Math.floor(Math.random()*100);
+                db.ref('usuarios').push({ nome: n, login: login, pass: p, role: 'user', ativo: false });
+                alert(`Solicitação enviada! Login gerado: ${login}`);
                 this.toggleAuth();
+            },
+
+            prepararEdicao(cod) {
+                const item = this.dados.materiais[cod];
+                if(!item) return;
+                this.isEditing = true;
+                this.nav('ent');
+                document.getElementById('titulo-entrada').innerText = "Editar Kit";
+                document.getElementById('aviso-edicao').classList.remove('hidden');
+                document.getElementById('btn-salvar-ent').innerText = "SALVAR ALTERAÇÕES";
+                document.getElementById('btn-cancelar-edit').classList.remove('hidden');
+                document.getElementById('btn-scan-ent').classList.add('hidden');
+                const ic = document.getElementById('ent-cod');
+                ic.value = item.cod;
+                ic.readOnly = true;
+                ic.style.background = "#eee"; 
+                document.getElementById('ent-nome').value = item.nome;
+                document.getElementById('ent-prot').value = item.prot || "";
+                document.getElementById('ent-local').value = item.local || "";
+                document.getElementById('ent-venc').value = item.venc || "";
+            },
+
+            limparFormEntrada() {
+                this.isEditing = false;
+                document.getElementById('titulo-entrada').innerText = "Entrada de Kit";
+                document.getElementById('aviso-edicao').classList.add('hidden');
+                document.getElementById('btn-salvar-ent').innerText = "CONFIRMAR ENTRADA";
+                document.getElementById('btn-cancelar-edit').classList.add('hidden');
+                document.getElementById('btn-scan-ent').classList.remove('hidden');
+                const ic = document.getElementById('ent-cod');
+                ic.readOnly = false;
+                ic.style.background = "white";
+                ['ent-cod','ent-nome','ent-venc','ent-prot','ent-local'].forEach(id => document.getElementById(id).value = "");
+            },
+
+            dbSalvar() {
+                const cod = document.getElementById('ent-cod').value.trim();
+                const nome = document.getElementById('ent-nome').value.trim();
+                const prot = document.getElementById('ent-prot').value;
+                const local = document.getElementById('ent-local').value;
+                const venc = document.getElementById('ent-venc').value;
+                if(!cod || !nome) return alert("Preencha Código e Nome.");
+                const acao = this.isEditing ? 'EDIÇÃO' : 'ENTRADA';
+                db.ref('materiais/' + cod).set({ cod, nome, prot, venc, local });
+                db.ref('logs').push({ data: new Date().toLocaleString('pt-BR'), user: this.user.nome, acao, desc: nome, meta: { cod, prot, venc, local } });
+                alert("Sucesso!");
+                this.limparFormEntrada();
+            },
+
+            validarSaida() {
+                const motivo = document.getElementById('sai-motivo').value;
+                const paciente = document.getElementById('sai-paciente').value.trim();
+                const btn = document.getElementById('btn-confirmar-baixa');
+                btn.disabled = (motivo === "Consumo" && paciente === "");
+            },
+
+            dbRemover() {
+                const cod = document.getElementById('sai-cod').value.trim();
+                const mot = document.getElementById('sai-motivo').value;
+                const pac = document.getElementById('sai-paciente').value.trim();
+                const item = this.dados.materiais[cod];
+                if(!item || !mot) return alert("Dados incompletos.");
+                db.ref('materiais/' + cod).remove();
+                db.ref('logs').push({ data: new Date().toLocaleString('pt-BR'), user: this.user.nome, acao: 'SAÍDA', desc: item.nome, meta: { cod, prot: item.prot, venc: item.venc, mot, pac } });
+                document.getElementById('sai-cod').value = "";
+                document.getElementById('sai-paciente').value = "";
+                alert("Baixa realizada.");
+            },
+
+            buscarEstorno(cod) {
+                const log = Object.values(this.dados.logs).reverse().find(l => l.acao === 'SAÍDA' && l.meta.cod === cod);
+                if(log) {
+                    document.getElementById('dados-estorno').classList.remove('hidden');
+                    document.getElementById('est-nome').value = log.desc;
+                    document.getElementById('est-prot').value = log.meta.prot || "-";
+                    document.getElementById('est-venc').value = log.meta.venc || "-";
+                } else { document.getElementById('dados-estorno').classList.add('hidden'); }
+            },
+
+            dbEstornar() {
+                const cod = document.getElementById('est-cod').value.trim();
+                const mot = document.getElementById('est-motivo').value.trim();
+                if(!mot) return alert("Motivo obrigatório.");
+                const nome = document.getElementById('est-nome').value;
+                const prot = document.getElementById('est-prot').value;
+                const venc = document.getElementById('est-venc').value;
+                db.ref('materiais/' + cod).set({ cod, nome, prot, venc, local: "ESTORNO" });
+                db.ref('logs').push({ data: new Date().toLocaleString('pt-BR'), user: this.user.nome, acao: 'ESTORNO', desc: nome, meta: { cod, prot, venc, mot_estorno: mot } });
+                alert("Estornado!");
+                document.getElementById('est-cod').value = "";
+                document.getElementById('est-motivo').value = "";
+                document.getElementById('dados-estorno').classList.add('hidden');
+            },
+
+            renderEstoque() {
+                const col = document.getElementById('filtro-coluna').value;
+                const busca = document.getElementById('busca').value.toLowerCase();
+                const corpo = document.getElementById('lista-est');
+                corpo.innerHTML = Object.values(this.dados.materiais).filter(m => (m[col] || "").toLowerCase().includes(busca)).map(m => `
+                    <tr>
+                        <td>${m.cod}</td>
+                        <td style="text-align:left"><b>${m.nome}</b></td>
+                        <td>${m.prot || '-'}</td>
+                        <td>${m.local || '-'}</td>
+                        <td>${m.venc ? m.venc.split('-').reverse().join('/') : '-'}</td>
+                        <td><button class="btn-edit" onclick="app.prepararEdicao('${m.cod}')">✏️</button></td>
+                    </tr>`).join('');
+            },
+
+            renderMov() {
+                const container = document.getElementById('lista-movimentacao');
+                const busca = document.getElementById('busca-mov').value.toLowerCase();
+                const logs = Object.values(this.dados.logs).reverse().filter(l => l.desc.toLowerCase().includes(busca));
+                container.innerHTML = logs.map(l => {
+                    const m = l.meta || {};
+                    let cor = 'bg-entrada'; if(l.acao === 'SAÍDA') cor = 'bg-saida'; if(l.acao === 'ESTORNO' || l.acao === 'EDIÇÃO') cor = 'bg-estorno';
+                    let extra = "";
+                    if(l.acao === 'SAÍDA' && m.pac) extra = `<br><b>Paciente:</b> ${m.pac} | <b>Motivo:</b> ${m.mot}`;
+                    if(l.acao === 'ESTORNO' && m.mot_estorno) extra = `<br><b style="color:var(--vermelho)">Motivo Estorno:</b> ${m.mot_estorno}`;
+                    return `<div class="log-row"><span><span class="badge-mov ${cor}">${l.acao}</span> <b>${l.desc}</b><span class="info-detalhada">Cód: ${m.cod || '-'} | Prot: ${m.prot || '-'}${extra}<br>Resp: ${l.user}</span></span><small>${l.data}</small></div>`;
+                }).join('');
+            },
+
+            renderLogs() {
+                const container = document.getElementById('lista-logs');
+                if(!container) return;
+                container.innerHTML = Object.values(this.dados.logs).reverse().slice(0,50).map(l => `<div class="log-row"><span><b>[${l.data}]</b> ${l.user}: ${l.acao} - ${l.desc}</span></div>`).join('');
+            },
+
+            /* --- GESTÃO DE USUÁRIOS RESTAURADA --- */
+            renderAdmin() {
+                const container = document.getElementById('lista-users');
+                if(!container) return;
+                container.innerHTML = Object.entries(this.dados.usuarios).map(([key, u]) => `
+                    <div class="log-row ${u.ativo === false ? 'pendente' : ''}">
+                        <span>
+                            <b>${u.nome}</b> [${u.role.toUpperCase()}]<br>
+                            <small>Login: ${u.login} | Senha: <b>${u.pass}</b> | Status: ${u.ativo ? 'Ativo' : 'BLOQUEADO'}</small>
+                        </span>
+                        <div style="display:flex; gap:5px">
+                            ${u.ativo === false ? 
+                                `<button class="btn-adm" style="background:var(--verde); color:white" onclick="app.liberarUser('${key}', true)">✅ Aprovar</button>` : 
+                                `<button class="btn-adm" onclick="app.liberarUser('${key}', false)">🚫 Bloquear</button>`
+                            }
+                            <button class="btn-adm" onclick="app.editPass('${key}')">🔑 Senha</button>
+                            <button class="btn-adm" onclick="app.editRole('${key}', '${u.role}')">🛡️ Cargo</button>
+                        </div>
+                    </div>`).join('');
+            },
+
+            liberarUser(key, status) { if(confirm(status ? "Ativar este usuário?" : "Bloquear este usuário?")) db.ref('usuarios/' + key).update({ ativo: status }); },
+            editPass(key) { const p = prompt("Digite a nova senha:"); if(p && p.length >= 4) db.ref('usuarios/' + key).update({ pass: p }); },
+            editRole(key, cur) { const next = cur === 'admin' ? 'user' : 'admin'; if(confirm(`Mudar cargo para ${next.toUpperCase()}?`)) db.ref('usuarios/' + key).update({ role: next }); },
+            
+            exportarExcel() {
+                const ws = XLSX.utils.json_to_sheet(Object.values(this.dados.logs));
+                const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Log");
+                XLSX.writeFile(wb, "Relatorio_Estoque.xlsx");
+            },
+
+            scan(inputId, divId, isEstorno = false) {
+                const div = document.getElementById(divId); div.style.display = 'block';
+                Quagga.init({ inputStream: { target: div, constraints: { facingMode: "environment" } }, decoder: { readers: ["code_128_reader"] } }, (err) => { if(!err) Quagga.start(); });
+                Quagga.onDetected((r) => { 
+                    document.getElementById(inputId).value = r.codeResult.code; 
+                    if(isEstorno) this.buscarEstorno(r.codeResult.code);
+                    Quagga.stop(); div.style.display = 'none'; 
+                });
+            },
+
+            checkVencimento() {
+                const q = document.getElementById('lista-quarentena');
+                const v = document.getElementById('lista-vencendo');
+                q.innerHTML = ""; v.innerHTML = "";
+                const hoje = new Date(); hoje.setHours(0,0,0,0);
+                Object.values(this.dados.materiais).forEach(m => {
+                    if(!m.venc) return;
+                    const diff = Math.ceil((new Date(m.venc) - hoje) / (1000*60*60*24));
+                    if(diff < 0) q.innerHTML += `<div class="alert-item bg-quarentena">${m.nome} (Vencido)</div>`;
+                    else if(diff <= 45) v.innerHTML += `<div class="alert-item bg-vencendo">${m.nome} (${diff} dias)</div>`;
+                });
+                document.getElementById('count-itens').innerText = Object.keys(this.dados.materiais).length;
             },
 
             nav(v) {
@@ -284,91 +534,7 @@
                 document.getElementById('v-'+v).classList.remove('hidden');
                 document.getElementById('nav-'+v).classList.add('active');
             },
-
-            renderEstoque() {
-                const busca = document.getElementById('busca').value.toLowerCase();
-                const corpo = document.getElementById('lista-est');
-                corpo.innerHTML = Object.values(this.dados.materiais).filter(m => m.nome.toLowerCase().includes(busca)).map(m => `
-                    <tr><td>${m.cod}</td><td>${m.nome}</td><td>${m.prot}</td><td>${m.local}</td><td>${m.venc}</td><td>-</td></tr>`).join('');
-            },
-
-            // --- ABA MOVIMENTAÇÃO COM BOTÕES ADMIN ---
-            renderMov() {
-                const container = document.getElementById('lista-movimentacao');
-                const busca = document.getElementById('busca-mov').value.toLowerCase();
-                const logsEntries = Object.entries(this.dados.logs).reverse();
-                
-                container.innerHTML = logsEntries.filter(([k, l]) => l.desc.toLowerCase().includes(busca)).map(([key, l]) => {
-                    const m = l.meta || {};
-                    let cor = l.acao === 'ENTRADA' ? 'bg-entrada' : (l.acao === 'SAÍDA' ? 'bg-saida' : 'bg-estorno');
-                    
-                    // BOTÕES PARA ADMIN
-                    const botoesAdmin = (this.user && this.user.role === 'admin') ? `
-                        <div style="display:flex; gap:10px; margin-top:8px">
-                            <button class="btn-adm-acao" onclick="app.editarLog('${key}')">✏️ Editar Registro</button>
-                            <button class="btn-adm-acao" style="color:red" onclick="app.excluirLog('${key}')">🗑️ Excluir Registro</button>
-                        </div>` : "";
-
-                    return `
-                    <div class="log-row">
-                        <div style="display:flex; justify-content:space-between">
-                            <span><span class="badge-mov ${cor}">${l.acao}</span> <b>${l.desc}</b></span>
-                            <small>${l.data}</small>
-                        </div>
-                        <span class="info-detalhada">Cód: ${m.cod || '-'} | Resp: ${l.user}</span>
-                        ${botoesAdmin}
-                    </div>`;
-                }).join('');
-            },
-
-            editarLog(key) {
-                const log = this.dados.logs[key];
-                const novo = prompt("Editar descrição do registro:", log.desc);
-                if(novo) db.ref('logs/' + key).update({ desc: novo });
-            },
-
-            excluirLog(key) {
-                if(confirm("Excluir este registro permanentemente do histórico?")) {
-                    db.ref('logs/' + key).remove();
-                }
-            },
-
-            dbSalvar() {
-                const c = document.getElementById('ent-cod').value;
-                const n = document.getElementById('ent-nome').value;
-                if(!c || !n) return;
-                const d = { cod: c, nome: n, prot: document.getElementById('ent-prot').value, local: document.getElementById('ent-local').value, venc: document.getElementById('ent-venc').value };
-                db.ref('materiais/' + c).set(d);
-                db.ref('logs').push({ data: new Date().toLocaleString(), user: this.user.nome, acao: 'ENTRADA', desc: n, meta: { cod: c } });
-                alert("Salvo!");
-            },
-
-            dbRemover() {
-                const c = document.getElementById('sai-cod').value;
-                const item = this.dados.materiais[c];
-                if(!item) return alert("Não encontrado");
-                db.ref('materiais/' + c).remove();
-                db.ref('logs').push({ data: new Date().toLocaleString(), user: this.user.nome, acao: 'SAÍDA', desc: item.nome, meta: { cod: c } });
-                alert("Saída ok");
-            },
-
-            renderAdmin() {
-                const container = document.getElementById('lista-users');
-                container.innerHTML = Object.entries(this.dados.usuarios).map(([key, u]) => `
-                    <div class="log-row ${!u.ativo ? 'pendente' : ''}">
-                        <span><b>${u.nome}</b> (${u.login}) - ${u.ativo ? 'Ativo' : 'Pendente'}</span>
-                        <button onclick="db.ref('usuarios/${key}').update({ativo: true})">Aprovar</button>
-                    </div>`).join('');
-            },
-
-            checkVencimento() {
-                document.getElementById('count-itens').innerText = Object.keys(this.dados.materiais).length;
-            },
-
-            toggleAuth() { 
-                document.getElementById('card-login').classList.toggle('hidden'); 
-                document.getElementById('card-cad').classList.toggle('hidden'); 
-            },
+            toggleAuth() { document.getElementById('card-login').classList.toggle('hidden'); document.getElementById('card-cad').classList.toggle('hidden'); },
             globalEnter(e) { if(e.key === "Enter") this.login(); }
         };
         app.init();
