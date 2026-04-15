@@ -108,24 +108,18 @@
         footer { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--escuro); color: #cbb2ff; text-align: center; padding: 10px; font-size: 12px; z-index: 1001; }
 
         @media (max-width: 768px) { .sidebar { width: 60px; } .nav-btn span { display: none; } main { margin-left: 60px; } }
-
-        /* Alerta de Carregamento */
-        #firebase-status { position: fixed; bottom: 50px; right: 20px; background: #d63031; color: white; padding: 10px 20px; border-radius: 8px; font-size: 12px; z-index: 9999; display: none; }
     </style>
 </head>
 <body>
 
-    <div id="firebase-status">⚠️ Erro ao conectar ao Banco de Dados. Verifique sua internet.</div>
-
     <section id="section-auth" class="auth-screen">
         <div id="card-login" class="auth-card">
             <img src="https://www.institutoamericas.org/wp-content/uploads/2025/09/logo-instituto-americas.svg" alt="Logo">
-            <h3>Login</h3>
             <label>Usuário</label>
             <input type="text" id="login-user" placeholder="Digite seu login" onkeydown="if(event.key==='Enter') app.login()">
             <label>Senha</label>
             <input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter') app.login()">
-            <button class="btn-premium" id="btn-login-main" onclick="app.login()">ACESSAR</button>
+            <button class="btn-premium" onclick="app.login()">ACESSAR</button>
             <p style="margin-top:20px; font-size:14px; color:var(--premium-gray)">
                 Novo por aqui? <a href="#" onclick="app.toggleAuth()" style="color:var(--premium-accent); font-weight:600; text-decoration:none">Solicitar Acesso</a>
             </p>
@@ -352,48 +346,23 @@
     </div>
 
     <script>
-        // Configurações do Firebase
+        // CREDENCIAIS ORIGINAIS DO AMÉRICAS (RECUPERADAS)
         const firebaseConfig = {
             apiKey: "AIzaSyDfmAU3fRhjqLpeOvED3Hb1ohQ0XKXBWpA",
-            authDomain: "americas.firebaseapp.com",
-            databaseURL: "https://americas-default-rtdb.firebaseio.com",
-            projectId: "americas",
-            storageBucket: "americas.firebasestorage.app",
+            authDomain: "iepeges.firebaseapp.com",
+            databaseURL: "https://iepeges-default-rtdb.firebaseio.com",
+            projectId: "iepeges",
+            storageBucket: "iepeges.firebasestorage.app",
             messagingSenderId: "722436445499",
             appId: "1:722436445499:web:e4c968164056477d44d31e"
         };
 
-        let db = null;
-        let isFirebaseLoaded = false;
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
-        // Função de Inicialização do Firebase com Verificação
-        function initFirebase() {
-            try {
-                if (typeof firebase === 'undefined') {
-                    console.error("Firebase SDK não carregado!");
-                    document.getElementById('firebase-status').style.display = 'block';
-                    return false;
-                }
-                
-                if (!firebase.apps.length) {
-                    firebase.initializeApp(firebaseConfig);
-                }
-                
-                db = firebase.database();
-                isFirebaseLoaded = true;
-                
-                firebase.auth().signInAnonymously().catch((error) => {
-                    console.error("Erro na autenticação anônima:", error.message);
-                });
-                
-                console.log("Firebase Inicializado com Sucesso!");
-                return true;
-            } catch (e) {
-                console.error("Erro ao inicializar Firebase:", e);
-                document.getElementById('firebase-status').style.display = 'block';
-                return false;
-            }
-        }
+        firebase.auth().signInAnonymously().catch((error) => {
+            console.error("Erro na autenticação anônima:", error.message);
+        });
 
         const app = {
             user: null, 
@@ -404,11 +373,6 @@
             massaCount: 0,
 
             init() {
-                if (!isFirebaseLoaded && !initFirebase()) {
-                    alert("O sistema não conseguiu se conectar ao banco de dados. Verifique sua internet ou se o arquivo está sendo aberto via servidor local.");
-                    return;
-                }
-
                 db.ref('/').on('value', (snap) => {
                     const val = snap.val() || {};
                     this.dados.materiais = val.materiais || {};
@@ -420,9 +384,6 @@
                     this.renderAdmin();
                     this.checkVencimento();
                     this.renderProtocolos();
-                }, (error) => {
-                    console.error("Erro ao ler dados:", error);
-                    document.getElementById('firebase-status').style.display = 'block';
                 });
                 this.resetMassa();
             },
@@ -431,15 +392,10 @@
                 const u = document.getElementById('login-user').value.toLowerCase().trim();
                 const p = document.getElementById('login-pass').value.trim();
                 
-                // Login Master (Offline ou Online)
+                // Login Master Américas
                 if(u === 'login americas' && p === 'itc@123@') {
                     this.user = { nome: 'MASTER', login: 'login americas', role: 'admin', ativo: true };
                     this.prosseguirLogin();
-                    return;
-                }
-
-                if (!isFirebaseLoaded && !initFirebase()) {
-                    alert("Erro de conexão com o banco de dados. Tente o login master ou verifique sua internet.");
                     return;
                 }
 
@@ -850,8 +806,8 @@
             toggleAuth() { document.getElementById('card-login').classList.toggle('hidden'); document.getElementById('card-cad').classList.toggle('hidden'); }
         };
 
-        // Tentar inicializar o Firebase assim que a página carregar
-        window.onload = initFirebase;
+        // Iniciar app
+        window.onload = () => app.init();
     </script>
 </body>
 </html>
