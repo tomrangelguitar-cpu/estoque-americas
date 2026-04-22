@@ -79,6 +79,13 @@
         .bg-quarentena { background: #fee2e2; border-color: var(--vermelho); color: #991b1b; }
         .bg-vencendo { background: #fef3c7; border-color: var(--alerta-laranja); color: #92400e; }
 
+        /* Scroll Interno para Listas de Vencimento */
+        .scroll-vencimento { max-height: 250px; overflow-y: auto; padding-right: 5px; }
+        .scroll-vencimento::-webkit-scrollbar { width: 6px; }
+        .scroll-vencimento::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        .scroll-vencimento::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
+        .scroll-vencimento::-webkit-scrollbar-thumb:hover { background: #aaa; }
+
         .hidden { display: none !important; }
         .scanner-view { width: 100%; height: 250px; background: #000; display: none; border-radius: 12px; margin-bottom: 15px; border: 3px solid var(--roxo); overflow: hidden; }
         
@@ -208,12 +215,18 @@
 
                 <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:20px; margin-bottom:20px">
                     <div class="card" style="border-left: 5px solid var(--vermelho)">
-                        <small>Itens Vencidos</small>
-                        <div id="lista-quarentena"></div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
+                            <h4 style="margin:0; font-size:14px; color:var(--vermelho);">Itens Vencidos</h4>
+                            <span id="count-vencidos" style="background:var(--vermelho); color:white; padding:2px 8px; border-radius:12px; font-size:12px; font-weight:bold">0</span>
+                        </div>
+                        <div id="lista-quarentena" class="scroll-vencimento"></div>
                     </div>
                     <div class="card" style="border-left: 5px solid var(--alerta-laranja)">
-                        <small>Vencendo (45 dias)</small>
-                        <div id="lista-vencendo"></div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
+                            <h4 style="margin:0; font-size:14px; color:var(--alerta-laranja);">Vencendo (45 dias)</h4>
+                            <span id="count-vencendo" style="background:var(--alerta-laranja); color:white; padding:2px 8px; border-radius:12px; font-size:12px; font-weight:bold">0</span>
+                        </div>
+                        <div id="lista-vencendo" class="scroll-vencimento"></div>
                     </div>
                 </div>
             </div>
@@ -553,6 +566,12 @@
                 });
                 document.getElementById('lista-quarentena').innerHTML = vencidos.join('') || '<p style="font-size:12px; color:#999">Nenhum item vencido.</p>';
                 document.getElementById('lista-vencendo').innerHTML = vencendo.join('') || '<p style="font-size:12px; color:#999">Nenhum item vencendo em 45 dias.</p>';
+                
+                // Atualizar contadores visuais
+                const countVencidosEl = document.getElementById('count-vencidos');
+                const countVencendoEl = document.getElementById('count-vencendo');
+                if(countVencidosEl) countVencidosEl.innerText = vencidos.length;
+                if(countVencendoEl) countVencendoEl.innerText = vencendo.length;
             },
 
             irParaSaida(cod) {
