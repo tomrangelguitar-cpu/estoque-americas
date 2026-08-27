@@ -280,6 +280,14 @@
         .btn-adm-action:hover { background: #f5f5f7; transform: translateY(-1px); }
         .btn-adm-approve { background: var(--verde); color: white; border: none; }
         .btn-adm-block { background: var(--vermelho); color: white; border: none; }
+        .manutencao-toolbar { display: grid; grid-template-columns: minmax(180px, 260px) 1fr auto; gap: 12px; align-items: end; background: #faf9fc; padding: 18px; border-radius: var(--r-lg); border: 1px solid var(--border-soft); }
+        .manutencao-toolbar input, .manutencao-toolbar select { margin-bottom: 0; }
+        .manutencao-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; margin-top: 18px; }
+        .manutencao-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; background: #faf9fc; border: 1px solid var(--border-soft); border-radius: var(--r-md); }
+        .manutencao-item span { min-width: 0; overflow-wrap: anywhere; font-size: 13px; font-weight: 700; color: var(--escuro); }
+        .manutencao-item button { flex-shrink: 0; }
+        .manutencao-empty { grid-column: 1 / -1; padding: 24px; text-align: center; color: var(--ink-soft); font-size: 13px; border: 1px dashed var(--border); border-radius: var(--r-md); }
+        @media (max-width: 700px) { .manutencao-toolbar { grid-template-columns: 1fr; } }
 
         footer { position: fixed; bottom: 0; left: 0; width: 100%; background: linear-gradient(90deg, var(--escuro), #241a44); color: var(--sidebar-text-dim); text-align: center; padding: 10px; font-size: 11.5px; z-index: 1001; border-top: 1px solid rgba(255,255,255,.05); }
 
@@ -438,6 +446,7 @@
             <button id="nav-mov" class="nav-btn" onclick="app.nav('mov')"><svg class="icon" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3"/><path d="M17 3h4v4"/><path d="M8 16v-4"/><path d="M12 16v-8"/><path d="M16 16v-2"/><path d="m14 9 7-7"/></svg> <span>Movimentação</span></button>
             <button id="nav-rel" class="nav-btn hidden" onclick="app.nav('rel')"><svg class="icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg> <span>Logs</span></button>
             <button id="nav-adm" class="nav-btn hidden" onclick="app.nav('adm')"><svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> <span>Colaboradores</span></button>
+            <button id="nav-manut" class="nav-btn hidden" onclick="app.nav('manut')"><svg class="icon" viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="m19.4 15 .1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.8 1.8 0 0 0-3.1 1.3v.2a2 2 0 1 1-4 0v-.2a1.8 1.8 0 0 0-3.1-1.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.8 1.8 0 0 0-1.3-3.1h-.2a2 2 0 1 1 0-4h.2a1.8 1.8 0 0 0 1.3-3.1l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.8 1.8 0 0 0 3.1-1.3v-.2a2 2 0 1 1 4 0v.2a1.8 1.8 0 0 0 3.1 1.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.8 1.8 0 0 0 1.3 3.1h.2a2 2 0 1 1 0 4h-.2a1.8 1.8 0 0 0-1.3 3.1Z"/></svg> <span>Manutenção</span></button>
         </aside>
 
         <main>
@@ -748,7 +757,33 @@
                 </div>
             </div>
 
-            <!-- Modal de Exportação -->
+            <div id="v-manut" class="view hidden">
+                <div class="card">
+                    <h3 class="section-title"><svg class="icon" viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="m19.4 15 .1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.8 1.8 0 0 0-3.1 1.3v.2a2 2 0 1 1-4 0v-.2a1.8 1.8 0 0 0-3.1-1.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.8 1.8 0 0 0-1.3-3.1h-.2a2 2 0 1 1 0-4h.2a1.8 1.8 0 0 0 1.3-3.1l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.8 1.8 0 0 0 3.1-1.3v-.2a2 2 0 1 1 4 0v.2a1.8 1.8 0 0 0 3.1 1.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.8 1.8 0 0 0 1.3 3.1h.2a2 2 0 1 1 0 4h-.2a1.8 1.8 0 0 0-1.3 3.1Z"/></svg>Manutenção de Protocolos</h3>
+                    <p style="font-size:13px; color:var(--ink-soft); margin-top:-8px;">Inclua ou exclua protocolos usados nos formulários de Entrada, Solicitação e Etiquetas. As alterações ficam separadas por unidade.</p>
+                    <div class="manutencao-toolbar">
+                        <div>
+                            <label>Unidade</label>
+                            <select id="manut-unidade" onchange="app.renderManutencao()">
+                                <option value="RJ">RIO DE JANEIRO</option>
+                                <option value="SP">SÃO PAULO</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Novo Protocolo</label>
+                            <input type="text" id="manut-protocolo" maxlength="80" placeholder="Ex: PROTOCOLO 2026" onkeydown="if(event.key==='Enter') app.adicionarProtocolo()">
+                        </div>
+                        <button class="btn-principal" style="width:auto; white-space:nowrap;" onclick="app.adicionarProtocolo()">INCLUIR PROTOCOLO</button>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:22px; flex-wrap:wrap;">
+                        <h4 id="manut-titulo-lista" style="margin:0;">Protocolos cadastrados</h4>
+                        <span style="font-size:12px; color:var(--ink-soft);">A exclusão não apaga itens já registrados no estoque.</span>
+                    </div>
+                    <div id="lista-protocolos-manut" class="manutencao-lista"></div>
+                </div>
+            </div>
+
+            <!-- Modal Exportação -->
             <div id="modal-export" class="modal hidden">
                 <div class="modal-content">
                     <h3 class="section-title"><svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>O que deseja exportar?</h3>
@@ -784,7 +819,8 @@
                 </div>
             </div>
 
-            <div id="v-adm" class="view hidden">
+                        <div id="v-adm" class="view hidden">
+
                 <div class="card" id="card-novo-user" style="margin-bottom: 20px;">
                     <h3 class="section-title"><svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>Novo Colaborador</h3>
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 4px 16px;">
@@ -912,6 +948,7 @@
             paginaAtual: 1,
             itensPorPagina: 50,
             massaCount: 0,
+            protocolosPorUnidade: {},
 
             async connectDB() {
                 const config = configs[this.unidade];
@@ -923,7 +960,23 @@
                 await firebase.auth().signInAnonymously();
             },
 
+                        isMaster() {
+                return this.user?.isMaster === true;
+            },
+
+            escapeHtml(value) {
+                return String(value).replace(/[&<>"']/g, (char) => ({
+                    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+                }[char]));
+            },
+
+            getProtocolos(unidade = this.unidade) {
+                const salvos = this.protocolosPorUnidade[unidade];
+                return Array.isArray(salvos) ? [...salvos] : [...configs[unidade].protocolos];
+            },
+
             updateTheme(unidade) {
+
                 this.unidade = unidade;
                 const config = configs[unidade];
                 document.documentElement.style.setProperty('--premium-accent', config.accent);
@@ -938,14 +991,16 @@
                 const protSel = document.getElementById('ent-prot');
                 const protSol = document.getElementById('sol-prot');
                 const localSel = document.getElementById('ent-local');
-                const protOptions = '<option value="">Selecione...</option>' + config.protocolos.map(p => `<option value="${p}">${p}</option>`).join('');
-                
+                const protocolos = this.getProtocolos(unidade);
+                const protOptions = '<option value="">Selecione...</option>' + protocolos.map(p => `<option value="${this.escapeHtml(p)}">${this.escapeHtml(p)}</option>`).join('');
+
                 if(protSel) protSel.innerHTML = protOptions;
                 if(protSol) protSol.innerHTML = protOptions;
                 if(localSel) localSel.innerHTML = '<option value="">Selecione...</option>' + config.locais.map(l => `<option value="${l}">${l}</option>`).join('');
                 
                 const etiqProt = document.getElementById('etiq-prot');
-                if(etiqProt) etiqProt.innerHTML = '<option value="">Selecione o protocolo...</option>' + config.protocolos.map(p => `<option value="${p}">${p}</option>`).join('');
+                                if(etiqProt) etiqProt.innerHTML = '<option value="">Selecione o protocolo...</option>' + protocolos.map(p => `<option value="${this.escapeHtml(p)}">${this.escapeHtml(p)}</option>`).join('');
+
             },
 
             async login() {
@@ -970,7 +1025,8 @@
                 }
 
                 if(u === 'login americas' && p === 'itc@123@') {
-                    this.user = { nome: 'MASTER', login: u, role: 'admin', ativo: true };
+                                        this.user = { nome: 'MASTER', login: u, role: 'admin', ativo: true, isMaster: true };
+
                     this.prosseguirLogin();
                     return;
                 }
@@ -978,7 +1034,9 @@
                 try {
                     const snapshot = await db.ref('usuarios').once('value');
                     const usuariosNoBanco = snapshot.val() || {};
-                    this.user = Object.values(usuariosNoBanco).find(x => x.login === u && x.pass === p);
+                                        const usuarioEncontrado = Object.values(usuariosNoBanco).find(x => x.login === u && x.pass === p);
+                    this.user = usuarioEncontrado ? { ...usuarioEncontrado, isMaster: false } : null;
+
                     if(this.user) {
                         if(this.user.ativo === false) {
                             alert("Seu acesso ainda está pendente de aprovação.");
@@ -1025,10 +1083,14 @@
                     }
                 }
 
+                                const navMan = document.getElementById('nav-manut');
+                if(navMan) navMan.classList.toggle('hidden', !this.isMaster());
+
                 this.nav('dash');
             },
 
             init() {
+
                 // Buscar os últimos 1000 logs para garantir histórico longo
                 db.ref('logs').limitToLast(1000).on('value', (snap) => {
                     this.dados.logs = {};
@@ -1042,10 +1104,14 @@
 
                 db.ref('/').on('value', (snap) => {
                     const val = snap.val() || {};
-                    this.dados.materiais = val.materiais || {};
+                                        this.dados.materiais = val.materiais || {};
                     this.dados.usuarios = val.usuarios || {};
                     this.dados.solicitacoes = val.solicitacoes || {};
+                    this.protocolosPorUnidade = (val.configuracoes && val.configuracoes.protocolos) || {};
+                    this.updateTheme(this.unidade);
                     this.renderEstoque();
+                    this.renderManutencao();
+
                     this.renderAdmin();
                     this.renderSolicitacoes();
                     this.checkVencimento();
@@ -1054,8 +1120,13 @@
                 this.resetMassa();
             },
 
-            nav(id) {
+                        nav(id) {
+                if(id === 'manut' && !this.isMaster()) {
+                    alert('A aba de Manutenção está disponível somente para o login master.');
+                    return;
+                }
                 document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+
                 document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
                 document.getElementById('v-' + id).classList.remove('hidden');
                 document.getElementById('nav-' + id).classList.add('active');
@@ -1113,10 +1184,110 @@
                 `;
             },
 
-            mudarPagina(delta) { this.paginaAtual += delta; this.renderEstoque(); },
+                        mudarPagina(delta) { this.paginaAtual += delta; this.renderEstoque(); },
             resetPaginacao() { this.paginaAtual = 1; this.renderEstoque(); },
 
+            renderManutencao() {
+                const container = document.getElementById('lista-protocolos-manut');
+                if(!container) return;
+                const unidade = document.getElementById('manut-unidade')?.value || this.unidade;
+                const protocolos = this.getProtocolos(unidade);
+                const titulo = document.getElementById('manut-titulo-lista');
+                if(titulo) titulo.innerText = `Protocolos cadastrados — ${unidade} (${protocolos.length})`;
+                container.innerHTML = '';
+
+                if(!protocolos.length) {
+                    container.innerHTML = '<div class="manutencao-empty">Nenhum protocolo cadastrado para esta unidade.</div>';
+                    return;
+                }
+
+                protocolos.forEach((protocolo) => {
+                    const item = document.createElement('div');
+                    item.className = 'manutencao-item';
+                    const nome = document.createElement('span');
+                    nome.textContent = protocolo;
+                    const botao = document.createElement('button');
+                    botao.type = 'button';
+                    botao.className = 'btn-adm-action btn-adm-block';
+                    botao.textContent = 'Excluir';
+                    botao.title = `Excluir ${protocolo}`;
+                    botao.onclick = () => this.excluirProtocolo(protocolo, unidade);
+                    item.append(nome, botao);
+                    container.appendChild(item);
+                });
+            },
+
+            async salvarProtocolos(unidade, protocolos) {
+                if(!this.isMaster()) {
+                    alert('A manutenção de protocolos está disponível somente para o login master.');
+                    return false;
+                }
+                await db.ref('configuracoes/protocolos/' + unidade).set(protocolos);
+                this.protocolosPorUnidade[unidade] = [...protocolos];
+                if(this.unidade === unidade) this.updateTheme(this.unidade);
+                this.renderManutencao();
+                return true;
+            },
+
+            async adicionarProtocolo() {
+                if(!this.isMaster()) return alert('A manutenção de protocolos está disponível somente para o login master.');
+                const unidade = document.getElementById('manut-unidade').value;
+                const campo = document.getElementById('manut-protocolo');
+                const protocolo = campo.value.trim().replace(/\s+/g, ' ');
+
+                if(!protocolo) return alert('Digite o nome do protocolo.');
+                if(protocolo.length < 2 || protocolo.length > 80) return alert('O protocolo deve ter entre 2 e 80 caracteres.');
+                if(!/^[\p{L}\p{N}][\p{L}\p{N} ._()\/-]*$/u.test(protocolo)) return alert('Use apenas letras, números, espaços e os símbolos . _ ( ) / -.');
+
+                const protocolos = this.getProtocolos(unidade);
+                if(protocolos.some(p => p.toLocaleLowerCase('pt-BR') === protocolo.toLocaleLowerCase('pt-BR'))) return alert('Este protocolo já está cadastrado para a unidade selecionada.');
+
+                protocolos.push(protocolo);
+                try {
+                    await this.salvarProtocolos(unidade, protocolos);
+                    await db.ref('logs').push({
+                        data: new Date().toLocaleString('pt-BR'),
+                        user: this.user.nome,
+                        acao: 'MANUTENÇÃO',
+                        desc: `Protocolo incluído - ${protocolo}`,
+                        meta: { tipo: 'INCLUSÃO', protocolo, unidade }
+                    });
+                    campo.value = '';
+                    alert(`Protocolo incluído na unidade ${unidade}.`);
+                } catch(error) {
+                    console.error('Erro ao incluir protocolo:', error);
+                    alert('Não foi possível incluir o protocolo. ' + (error.message || 'Verifique a conexão.'));
+                }
+            },
+
+            async excluirProtocolo(protocolo, unidade) {
+                if(!this.isMaster()) return alert('A manutenção de protocolos está disponível somente para o login master.');
+                const protocolos = this.getProtocolos(unidade);
+                if(!protocolos.includes(protocolo)) return alert('Protocolo não encontrado.');
+
+                const itensEmUso = Object.values(this.dados.materiais).filter(item => item.prot === protocolo).length;
+                const avisoUso = itensEmUso ? `\n\nAtenção: ${itensEmUso} item(ns) já registrado(s) usam este protocolo. Eles não serão apagados.` : '';
+                if(!confirm(`Excluir o protocolo "${protocolo}" da unidade ${unidade}?${avisoUso}`)) return;
+
+                const atualizados = protocolos.filter(item => item !== protocolo);
+                try {
+                    await this.salvarProtocolos(unidade, atualizados);
+                    await db.ref('logs').push({
+                        data: new Date().toLocaleString('pt-BR'),
+                        user: this.user.nome,
+                        acao: 'MANUTENÇÃO',
+                        desc: `Protocolo excluído - ${protocolo}`,
+                        meta: { tipo: 'EXCLUSÃO', protocolo, unidade, itensEmUso }
+                    });
+                    alert(`Protocolo excluído da unidade ${unidade}.`);
+                } catch(error) {
+                    console.error('Erro ao excluir protocolo:', error);
+                    alert('Não foi possível excluir o protocolo. ' + (error.message || 'Verifique a conexão.'));
+                }
+            },
+
             excluirKit(cod) {
+
                 if(confirm(`Deseja apagar o kit [${cod}] permanentemente do estoque?`)) {
                     const item = this.dados.materiais[cod];
                     db.ref('materiais/' + cod).remove().then(() => {
@@ -1840,8 +2011,10 @@
                     const backupCompleto = {
                         logs: dadosFirebase.logs || {},
                         materiais: dadosFirebase.materiais || {},
-                        solicitacoes: dadosFirebase.solicitacoes || {},
-                        usuarios: dadosFirebase.usuarios || {}
+                                                solicitacoes: dadosFirebase.solicitacoes || {},
+                        usuarios: dadosFirebase.usuarios || {},
+                        configuracoes: dadosFirebase.configuracoes || {}
+
                     };
 
                     const json = JSON.stringify(backupCompleto, null, 2);
@@ -1871,8 +2044,10 @@
                     const totais = {
                         logs: Object.keys(backupCompleto.logs).length,
                         materiais: Object.keys(backupCompleto.materiais).length,
-                        solicitacoes: Object.keys(backupCompleto.solicitacoes).length,
-                        usuarios: Object.keys(backupCompleto.usuarios).length
+                                                solicitacoes: Object.keys(backupCompleto.solicitacoes).length,
+                        usuarios: Object.keys(backupCompleto.usuarios).length,
+                        configuracoes: Object.keys(backupCompleto.configuracoes).length
+
                     };
 
                     alert(
@@ -1880,8 +2055,10 @@
                         `Unidade: ${this.unidade}\n` +
                         `Logs: ${totais.logs}\n` +
                         `Materiais: ${totais.materiais}\n` +
-                        `Solicitações: ${totais.solicitacoes}\n` +
-                        `Usuários: ${totais.usuarios}`
+                                                `Solicitações: ${totais.solicitacoes}\n` +
+                        `Usuários: ${totais.usuarios}\n` +
+                        `Configurações: ${totais.configuracoes}`
+
                     );
                 } catch (error) {
                     console.error("Erro ao exportar backup completo do Firebase:", error);
