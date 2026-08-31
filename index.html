@@ -233,6 +233,17 @@
 
         .hidden { display: none !important; }
         .scanner-view { width: 100%; height: 250px; background: #000; display: none; border-radius: var(--r-lg); margin-bottom: 15px; border: 3px solid var(--roxo); overflow: hidden; box-shadow: var(--shadow-md); }
+        .scanner-actions { display: flex; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+        .scanner-actions .btn-principal, .scanner-actions .btn-usb-focus { flex: 1 1 260px; width: auto; margin-bottom: 0 !important; }
+        .btn-usb-focus { background: linear-gradient(135deg, #374151, #1f2937); color: white; border: none; padding: 14px; border-radius: var(--r-sm); cursor: pointer; font-weight: 700; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: transform .16s var(--ease), box-shadow .16s var(--ease), background .16s var(--ease); box-shadow: var(--shadow-xs); }
+        .btn-usb-focus:hover { background: linear-gradient(135deg, #4b5563, #374151); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .btn-usb-focus:active { transform: translateY(0); }
+        .btn-usb-focus .icon { width: 17px; height: 17px; }
+        .scanner-help { margin: 0 0 15px; font-size: 12px; color: var(--ink-soft); }
+        input.barcode-usb-focus { border-color: #374151; box-shadow: 0 0 0 4px rgba(55,65,81,.16); }
+
+        .massa-row .btn-usb-focus { width: 46px; height: 46px; padding: 10px; flex: 0 0 46px; }
+
 
         .massa-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
         .massa-row input { margin-bottom: 0; flex-grow: 1; }
@@ -605,7 +616,11 @@
                     <div id="aviso-edicao" class="hidden" style="background:#fff7e0; color:#8a5a00; padding:12px 14px; border-radius:var(--r-sm); margin-bottom:15px; font-size:13.5px; font-weight:500; border:1px solid #f5e0a3">
                         ⚠️ Você está no modo de edição. O código do kit não pode ser alterado.
                     </div>
-                    <button id="btn-scan-ent" class="btn-principal" style="margin-bottom:18px" onclick="app.scan('ent-cod', 's-ent')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3.5"/></svg> Escanear Código de Barras</button>
+                    <div class="scanner-actions">
+                        <button id="btn-scan-ent" class="btn-principal" style="margin-bottom:18px" onclick="app.scan('ent-cod', 's-ent')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3.5"/></svg> Escanear com a câmera</button>
+                        <button id="btn-usb-ent" type="button" class="btn-usb-focus" onclick="app.focusBarcodeInput('ent-cod')" title="Ativar o campo para o leitor Honeywell"><svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h5"/></svg> Focar leitor USB</button>
+                    </div>
+                    <p class="scanner-help">Use a câmera ou clique em <b>Focar leitor USB</b> e faça a leitura com o Honeywell 1250g. A leitura apenas preenche o código; confirme a entrada no botão abaixo.</p>
                     <div id="s-ent" class="scanner-view"></div>
 
                     <div class="form-grid">
@@ -643,7 +658,11 @@
             <div id="v-sai" class="view hidden">
                 <div class="card">
                     <h3 class="section-title"><svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Saída de Material (Baixa)</h3>
-                    <button class="btn-principal" style="background:linear-gradient(135deg, var(--vermelho), #b3202d); margin-bottom:18px" onclick="app.scan('sai-cod', 's-sai')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3.5"/></svg> Escanear para Baixa</button>
+                    <div class="scanner-actions">
+                        <button class="btn-principal" style="background:linear-gradient(135deg, var(--vermelho), #b3202d); margin-bottom:18px" onclick="app.scan('sai-cod', 's-sai')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0 2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3.5"/></svg> Escanear com a câmera</button>
+                        <button type="button" class="btn-usb-focus" onclick="app.focusBarcodeInput('sai-cod')" title="Ativar o campo para o leitor Honeywell"><svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h5"/></svg> Focar leitor USB</button>
+                    </div>
+                    <p class="scanner-help">Use a câmera ou clique em <b>Focar leitor USB</b> e faça a leitura com o Honeywell 1250g. A leitura apenas preenche o código; confirme a saída no botão abaixo.</p>
                     <div id="s-sai" class="scanner-view"></div>
                     <div class="form-grid">
                         <div><label>Código do Kit</label><input type="text" id="sai-cod" placeholder="Escaneie ou digite..."></div>
@@ -669,6 +688,10 @@
                     <h3 class="section-title"><svg class="icon" viewBox="0 0 24 24"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>Baixa em Massa (Lote)</h3>
                     <p style="font-size: 13px; color: var(--ink-soft); margin-bottom: 15px;">Escaneie ou digite os códigos. O motivo selecionado será aplicado a todos.</p>
                     
+                    <div class="scanner-actions">
+                        <button type="button" class="btn-usb-focus" onclick="app.focusNextMassaInput()"><svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h5"/></svg> Focar próximo código no leitor USB</button>
+                    </div>
+                    <p class="scanner-help">Para o lote, use o botão ao lado de cada linha para escolher onde o Honeywell deve preencher o código. A baixa só acontece ao clicar em <b>CONFIRMAR BAIXA EM MASSA</b>.</p>
                     <div id="s-massa" class="scanner-view"></div>
 
                     <label>Motivo da Baixa (Lote)</label>
@@ -690,7 +713,11 @@
             <div id="v-est" class="view hidden">
                 <div class="card">
                     <h3 class="section-title"><svg class="icon" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>Estorno de Material</h3>
-                    <button class="btn-principal" style="background:#4b5065; margin-bottom:18px" onclick="app.scan('est-cod', 's-estorno', true)"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3.5"/></svg> Escanear para Estorno</button>
+                    <div class="scanner-actions">
+                        <button class="btn-principal" style="background:#4b5065; margin-bottom:18px" onclick="app.scan('est-cod', 's-estorno', true)"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0 2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3.5"/></svg> Escanear com a câmera</button>
+                        <button type="button" class="btn-usb-focus" onclick="app.focusBarcodeInput('est-cod')" title="Ativar o campo para o leitor Honeywell"><svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h5"/></svg> Focar leitor USB</button>
+                    </div>
+                    <p class="scanner-help">O leitor apenas preenche o código. No Estorno, o comportamento de busca pelo Enter já existente permanece.</p>
                     <div id="s-estorno" class="scanner-view"></div>
                     <label>Código do Kit</label><input type="text" id="est-cod" placeholder="Escaneie ou digite..." onkeydown="if(event.key==='Enter') app.buscarEstorno(this.value)">
                     <div id="dados-estorno" class="hidden" style="margin-top:20px; border-top: 1px dashed var(--border); padding-top:20px">
@@ -1395,7 +1422,8 @@
                 div.className = 'massa-row';
                 div.innerHTML = `
                     <input type="text" id="massa-cod-${this.massaCount}" placeholder="Código do Item ${this.massaCount}">
-                    <button class="btn-scan-mini" onclick="app.scan('massa-cod-${this.massaCount}', 's-massa')">📷</button>
+                    <button type="button" class="btn-usb-focus" onclick="app.focusBarcodeInput('massa-cod-${this.massaCount}')" title="Focar leitor Honeywell nesta linha"><svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h5"/></svg></button>
+                    <button type="button" class="btn-scan-mini" onclick="app.scan('massa-cod-${this.massaCount}', 's-massa')" title="Ler com a câmera">📷</button>
                 `;
                 document.getElementById('massa-lista-inputs').appendChild(div);
             },
@@ -1439,6 +1467,7 @@
                 document.getElementById('btn-salvar-ent').innerText = "SALVAR ALTERAÇÕES";
                 document.getElementById('btn-cancelar-edit').classList.remove('hidden');
                 document.getElementById('btn-scan-ent').classList.add('hidden');
+                document.getElementById('btn-usb-ent').classList.add('hidden');
                 const ic = document.getElementById('ent-cod');
                 ic.value = item.cod; ic.readOnly = true; ic.style.background = "#eee";
                 document.getElementById('ent-nome').value = item.nome;
@@ -1460,6 +1489,7 @@
                 document.getElementById('btn-salvar-ent').innerText = "CONFIRMAR ENTRADA";
                 document.getElementById('btn-cancelar-edit').classList.add('hidden');
                 document.getElementById('btn-scan-ent').classList.remove('hidden');
+                document.getElementById('btn-usb-ent').classList.remove('hidden');
                 const ic = document.getElementById('ent-cod');
                 ic.value = ""; ic.readOnly = false; ic.style.background = "white";
                 ['ent-nome','ent-prot','ent-local','ent-venc'].forEach(id => document.getElementById(id).value = "");
@@ -1965,6 +1995,26 @@
                 document.getElementById('card-cad').classList.toggle('hidden');
             },
 
+            focusBarcodeInput(targetId) {
+                const input = document.getElementById(targetId);
+                if(!input || input.disabled || input.readOnly) return;
+                input.focus();
+                input.select();
+                input.classList.add('barcode-usb-focus');
+                window.setTimeout(() => input.classList.remove('barcode-usb-focus'), 1400);
+            },
+
+            focusNextMassaInput() {
+                let inputs = Array.from(document.querySelectorAll('[id^="massa-cod-"]'));
+                let target = inputs.find(input => !input.value.trim());
+                if(!target && this.massaCount < 15) {
+                    this.addInputMassa();
+                    inputs = Array.from(document.querySelectorAll('[id^="massa-cod-"]'));
+                    target = inputs[inputs.length - 1];
+                }
+                if(target) this.focusBarcodeInput(target.id);
+            },
+
             scan(targetId, viewId, isEstorno = false) {
                 const view = document.getElementById(viewId);
                 view.style.display = 'block';
@@ -2082,8 +2132,14 @@
         window.addEventListener('keydown', (e) => {
             if(e.key === 'Enter') {
                 const active = document.activeElement;
-                if(active.id === 'ent-cod' || active.id === 'ent-nome' || active.id === 'ent-venc') app.dbSalvar();
-                if(active.id === 'sai-cod' || active.id === 'sai-paciente') app.dbRemover();
+                // Leitores USB costumam enviar Enter como sufixo. Nesses campos,
+                // a leitura apenas preenche o código; a confirmação continua manual.
+                if(active.id === 'ent-cod' || active.id === 'sai-cod') {
+                    e.preventDefault();
+                    return;
+                }
+                if(active.id === 'ent-nome' || active.id === 'ent-venc') app.dbSalvar();
+                if(active.id === 'sai-paciente') app.dbRemover();
                 if(active.id === 'est-cod') app.buscarEstorno(active.value);
                 if(active.id === 'est-motivo') app.dbEstornar();
             }
